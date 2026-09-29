@@ -1,0 +1,26 @@
+id: curl
+name: curl
+executables:
+- curl
+description:
+  en: Transfer data using URLs.
+  zh-CN: 通过 URL 发送请求和传输数据。
+categories:
+- http
+tags:
+- download
+- remote
+platforms:
+- linux
+- macos
+similar:
+- httpie
+- xh
+- wget
+install:
+  apt:
+    package: curl
+    command: sudo apt install curl
+  brew:
+    package: curl
+    command: brew install curl

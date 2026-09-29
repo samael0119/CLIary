@@ -1,0 +1,24 @@
+id: less
+name: less
+executables:
+- less
+description:
+  en: Page through text files.
+  zh-CN: 分页查看长文本文件。
+categories:
+- text
+tags:
+- files
+- tui
+platforms:
+- linux
+- macos
+similar:
+- bat
+install:
+  apt:
+    package: less
+    command: sudo apt install less
+  brew:
+    package: less
+    command: brew install less

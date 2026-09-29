@@ -1,0 +1,23 @@
+id: top
+name: top
+executables:
+- top
+description:
+  en: Display running processes and system load.
+  zh-CN: 查看运行中的进程与系统负载。
+categories:
+- monitoring
+tags:
+- process
+platforms:
+- linux
+- macos
+similar:
+- htop
+install:
+  apt:
+    package: procps
+    command: sudo apt install procps
+  brew:
+    package: procps
+    command: brew install procps

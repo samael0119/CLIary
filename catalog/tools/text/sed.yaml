@@ -1,0 +1,22 @@
+id: sed
+name: sed
+executables:
+- sed
+description:
+  en: Stream editor for text transformations.
+  zh-CN: 使用流编辑器转换文本。
+categories:
+- text
+tags:
+- filter
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: sed
+    command: sudo apt install sed
+  brew:
+    package: gnu-sed
+    command: brew install gnu-sed

@@ -1,0 +1,116 @@
+name: CLIary
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cliary-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        run: rustup default stable
+      - name: Catalog schema
+        run: |
+          python3 -m venv /tmp/cliary-venv
+          /tmp/cliary-venv/bin/pip install PyYAML jsonschema
+          /tmp/cliary-venv/bin/python scripts/validate_catalog.py
+      - name: Catalog references
+        run: cargo run --locked -p cliary-catalog --bin cliary-catalog-build -- validate
+      - name: Rust tests
+        run: cargo test --workspace --locked
+      - name: Shell syntax
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq zsh fish
+          bash -n crates/cliary-cli/shell/bash.sh
+          zsh -n crates/cliary-cli/shell/zsh.sh
+          fish -n crates/cliary-cli/shell/fish.fish
+
+  build:
+    needs: validate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: macos-15
+            target: aarch64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        run: |
+          rustup default stable
+          rustup target add ${{ matrix.target }}
+      - name: Build
+        env:
+          CLIARY_CATALOG_URL: https://github.com/${{ github.repository }}/releases/latest/download
+        run: cargo build --locked --release --target ${{ matrix.target }} -p cliary-cli
+      - name: Package
+        run: |
+          mkdir -p dist
+          tar -czf dist/cliary-${{ matrix.target }}.tar.gz -C target/${{ matrix.target }}/release cliary
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cliary-${{ matrix.target }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  catalog:
+    needs: validate
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        run: rustup default stable
+      - name: Build Catalog release assets
+        run: cargo run --locked --release -p cliary-catalog --bin cliary-catalog-build -- build dist/catalog "$GITHUB_RUN_NUMBER"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cliary-catalog
+          path: dist/catalog/*
+          if-no-files-found: error
+
+  release:
+    needs: [validate, build, catalog]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cliary-*
+          merge-multiple: true
+          path: dist
+      - name: Prepare installer and checksums
+        run: |
+          sed "s|@GITHUB_REPOSITORY@|${GITHUB_REPOSITORY}|g" scripts/install.sh > dist/install.sh
+          chmod +x dist/install.sh
+          cd dist
+          sha256sum cliary-*.tar.gz > SHA256SUMS
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v0.1.0-build.${GITHUB_RUN_NUMBER}" dist/* \
+            --title "CLIary V0.1 build ${GITHUB_RUN_NUMBER}" \
+            --notes "CLIary binaries and Catalog update from main."

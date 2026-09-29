@@ -1,0 +1,41 @@
+id: gdu
+name: gdu
+executables:
+- gdu
+description:
+  en: Fast disk usage analyzer with terminal interface.
+  zh-CN: 快速交互式磁盘空间分析工具。
+categories:
+- filesystem
+tags:
+- disk
+- storage
+- tui
+- fast
+platforms:
+- linux
+- macos
+similar:
+- ncdu
+- dust
+keywords:
+  zh-CN:
+  - 磁盘空间
+  - 找大文件
+features:
+  tui: true
+  interactive: true
+  delete_files: true
+  parallel_scan: true
+install:
+  brew:
+    package: gdu
+    command: brew install gdu
+homepage: https://github.com/dundee/gdu
+repository: https://github.com/dundee/gdu
+license: MIT
+implementation_language: Go
+maintenance_status: active
+common_commands:
+- gdu
+- gdu --no-delete

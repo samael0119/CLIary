@@ -1,0 +1,19 @@
+id: yq
+name: yq
+executables:
+- yq
+description:
+  en: Process YAML and related data formats.
+  zh-CN: 在命令行处理 YAML 数据。
+categories:
+- text
+tags:
+- filter
+platforms:
+- linux
+- macos
+similar: []
+install:
+  brew:
+    package: yq
+    command: brew install yq

@@ -1,0 +1,22 @@
+id: sqlite3
+name: sqlite3
+executables:
+- sqlite3
+description:
+  en: Command-line shell for SQLite databases.
+  zh-CN: SQLite 数据库命令行工具。
+categories:
+- database
+tags:
+- interactive
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: sqlite3
+    command: sudo apt install sqlite3
+  brew:
+    package: sqlite
+    command: brew install sqlite

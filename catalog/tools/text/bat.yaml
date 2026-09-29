@@ -1,0 +1,26 @@
+id: bat
+name: bat
+executables:
+- bat
+- batcat
+description:
+  en: View files with syntax highlighting.
+  zh-CN: 带语法高亮的文件查看工具。
+categories:
+- text
+tags:
+- files
+- tui
+platforms:
+- linux
+- macos
+similar:
+- cat
+- less
+install:
+  apt:
+    package: bat
+    command: sudo apt install bat
+  brew:
+    package: bat
+    command: brew install bat

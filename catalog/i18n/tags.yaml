@@ -1,0 +1,32 @@
+- id: disk
+  name: {en: Disk, zh-CN: 磁盘}
+- id: storage
+  name: {en: Storage, zh-CN: 存储}
+- id: tui
+  name: {en: TUI, zh-CN: 终端界面}
+- id: interactive
+  name: {en: Interactive, zh-CN: 交互式}
+- id: files
+  name: {en: Files, zh-CN: 文件}
+- id: fast
+  name: {en: Fast, zh-CN: 快速}
+- id: filter
+  name: {en: Filter, zh-CN: 过滤}
+- id: json
+  name: {en: JSON, zh-CN: JSON}
+- id: download
+  name: {en: Download, zh-CN: 下载}
+- id: container
+  name: {en: Container, zh-CN: 容器}
+- id: process
+  name: {en: Process, zh-CN: 进程}
+- id: benchmark
+  name: {en: Benchmark, zh-CN: 基准测试}
+- id: video
+  name: {en: Video, zh-CN: 视频}
+- id: encryption
+  name: {en: Encryption, zh-CN: 加密}
+- id: remote
+  name: {en: Remote, zh-CN: 远程}
+- id: editor
+  name: {en: Editor, zh-CN: 编辑器}

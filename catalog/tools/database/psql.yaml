@@ -1,0 +1,20 @@
+id: psql
+name: psql
+executables:
+- psql
+description:
+  en: PostgreSQL interactive terminal.
+  zh-CN: PostgreSQL 交互式终端。
+categories:
+- database
+tags:
+- interactive
+- remote
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: postgresql-client
+    command: sudo apt install postgresql-client

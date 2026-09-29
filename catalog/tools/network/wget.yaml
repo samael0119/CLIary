@@ -1,0 +1,25 @@
+id: wget
+name: wget
+executables:
+- wget
+description:
+  en: Download files over network protocols.
+  zh-CN: 从网络下载文件。
+categories:
+- network
+tags:
+- download
+- remote
+platforms:
+- linux
+- macos
+similar:
+- curl
+- aria2
+install:
+  apt:
+    package: wget
+    command: sudo apt install wget
+  brew:
+    package: wget
+    command: brew install wget

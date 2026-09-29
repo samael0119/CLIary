@@ -1,0 +1,25 @@
+id: xh
+name: xh
+executables:
+- xh
+description:
+  en: Fast command-line HTTP client.
+  zh-CN: 快速的命令行 HTTP 客户端。
+categories:
+- http
+tags:
+- fast
+- remote
+platforms:
+- linux
+- macos
+similar:
+- curl
+- httpie
+install:
+  brew:
+    package: xh
+    command: brew install xh
+  cargo:
+    package: xh
+    command: cargo install xh --locked

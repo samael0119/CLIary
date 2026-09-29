@@ -1,0 +1,29 @@
+id: btop
+name: btop
+executables:
+- btop
+description:
+  en: Resource monitor with terminal interface.
+  zh-CN: 终端系统资源监控工具。
+categories:
+- monitoring
+tags:
+- tui
+- process
+- interactive
+platforms:
+- linux
+- macos
+similar:
+- htop
+- bottom
+features:
+  tui: true
+  interactive: true
+install:
+  apt:
+    package: btop
+    command: sudo apt install btop
+  brew:
+    package: btop
+    command: brew install btop

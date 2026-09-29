@@ -1,0 +1,45 @@
+id: dust
+name: dust
+executables:
+- dust
+description:
+  en: Visual disk usage summary for the terminal.
+  zh-CN: 在终端直观展示磁盘占用。
+categories:
+- filesystem
+tags:
+- disk
+- storage
+- fast
+platforms:
+- linux
+- macos
+similar:
+- ncdu
+- gdu
+keywords:
+  zh-CN:
+  - 磁盘空间
+  - 找大文件
+install:
+  brew:
+    package: dust
+    command: brew install dust
+  cargo:
+    package: du-dust
+    command: cargo install du-dust
+  snap:
+    package: dust
+    command: snap install dust
+homepage: https://github.com/bootandy/dust
+repository: https://github.com/bootandy/dust
+license: Apache-2.0
+implementation_language: Rust
+maintenance_status: active
+features:
+  tui: false
+  interactive: false
+  delete_files: false
+common_commands:
+- dust
+- dust -n 10

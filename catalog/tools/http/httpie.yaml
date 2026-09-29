@@ -1,0 +1,31 @@
+id: httpie
+name: httpie
+executables:
+- http
+description:
+  en: Human-friendly HTTP client.
+  zh-CN: 易读易用的 HTTP 请求客户端。
+categories:
+- http
+tags:
+- interactive
+- remote
+platforms:
+- linux
+- macos
+similar:
+- curl
+- xh
+install:
+  apt:
+    package: httpie
+    command: sudo apt install httpie
+  brew:
+    package: httpie
+    command: brew install httpie
+  pipx:
+    package: httpie
+    command: pipx install httpie
+  snap:
+    package: httpie
+    command: snap install httpie

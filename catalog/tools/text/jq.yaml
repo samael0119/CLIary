@@ -1,0 +1,23 @@
+id: jq
+name: jq
+executables:
+- jq
+description:
+  en: Process JSON from the command line.
+  zh-CN: 在命令行查询和处理 JSON。
+categories:
+- text
+tags:
+- json
+- filter
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: jq
+    command: sudo apt install jq
+  brew:
+    package: jq
+    command: brew install jq

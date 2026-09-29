@@ -1,0 +1,23 @@
+id: redis-cli
+name: redis-cli
+executables:
+- redis-cli
+description:
+  en: Command-line client for Redis.
+  zh-CN: Redis 命令行客户端。
+categories:
+- database
+tags:
+- interactive
+- remote
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: redis-tools
+    command: sudo apt install redis-tools
+  brew:
+    package: redis
+    command: brew install redis

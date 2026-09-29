@@ -1,0 +1,25 @@
+id: hyperfine
+name: hyperfine
+executables:
+- hyperfine
+description:
+  en: Benchmark command-line programs.
+  zh-CN: 对命令行程序进行基准测试。
+categories:
+- development
+tags:
+- benchmark
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: hyperfine
+    command: sudo apt install hyperfine
+  brew:
+    package: hyperfine
+    command: brew install hyperfine
+  cargo:
+    package: hyperfine
+    command: cargo install --locked hyperfine

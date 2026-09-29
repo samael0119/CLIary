@@ -1,0 +1,24 @@
+id: aria2
+name: aria2
+executables:
+- aria2
+description:
+  en: Multi-protocol download utility.
+  zh-CN: 支持多协议的下载工具。
+categories:
+- network
+tags:
+- download
+- fast
+platforms:
+- linux
+- macos
+similar:
+- wget
+install:
+  apt:
+    package: aria2
+    command: sudo apt install aria2
+  brew:
+    package: aria2
+    command: brew install aria2

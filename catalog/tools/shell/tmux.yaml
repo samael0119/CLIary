@@ -1,0 +1,27 @@
+id: tmux
+name: tmux
+executables:
+- tmux
+description:
+  en: Terminal multiplexer for persistent sessions.
+  zh-CN: 保持多个终端会话的复用器。
+categories:
+- shell
+tags:
+- tui
+- interactive
+platforms:
+- linux
+- macos
+similar:
+- zellij
+features:
+  tui: true
+  interactive: true
+install:
+  apt:
+    package: tmux
+    command: sudo apt install tmux
+  brew:
+    package: tmux
+    command: brew install tmux

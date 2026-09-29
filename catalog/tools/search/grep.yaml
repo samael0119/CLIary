@@ -1,0 +1,25 @@
+id: grep
+name: grep
+executables:
+- grep
+description:
+  en: Search text using patterns.
+  zh-CN: 按模式搜索文本内容。
+categories:
+- search
+tags:
+- files
+- filter
+platforms:
+- linux
+- macos
+similar:
+- rg
+- ag
+install:
+  apt:
+    package: grep
+    command: sudo apt install grep
+  brew:
+    package: grep
+    command: brew install grep

@@ -1,0 +1,23 @@
+id: gh
+name: gh
+executables:
+- gh
+description:
+  en: GitHub command-line interface.
+  zh-CN: 在终端操作 GitHub 的工具。
+categories:
+- git
+tags:
+- remote
+- interactive
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: gh
+    command: sudo apt install gh
+  brew:
+    package: gh
+    command: brew install gh

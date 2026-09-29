@@ -1,0 +1,16 @@
+[package]
+name = "cliary-web"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+axum = "0.8"
+tokio = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
+askama = "0.12"
+cliary-core = { path = "../cliary-core" }
+rand = "0.8"
+hex = "0.4"

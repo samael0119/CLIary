@@ -1,0 +1,19 @@
+id: delta
+name: delta
+executables:
+- delta
+description:
+  en: Syntax-highlighting pager for Git diffs.
+  zh-CN: 带语法高亮的 Git 差异查看工具。
+categories:
+- git
+tags:
+- files
+platforms:
+- linux
+- macos
+similar: []
+install:
+  brew:
+    package: git-delta
+    command: brew install git-delta

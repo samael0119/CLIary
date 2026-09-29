@@ -1,0 +1,20 @@
+id: lazygit
+name: lazygit
+executables:
+- lazygit
+description:
+  en: Terminal interface for Git operations.
+  zh-CN: 用于 Git 操作的终端界面。
+categories:
+- git
+tags:
+- tui
+- interactive
+platforms:
+- linux
+- macos
+similar: []
+install:
+  brew:
+    package: lazygit
+    command: brew install lazygit

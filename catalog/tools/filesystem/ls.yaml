@@ -1,0 +1,23 @@
+id: ls
+name: ls
+executables:
+- ls
+description:
+  en: List directory contents.
+  zh-CN: 列出目录内容。
+categories:
+- filesystem
+tags:
+- files
+platforms:
+- linux
+- macos
+similar:
+- eza
+install:
+  apt:
+    package: coreutils
+    command: sudo apt install coreutils
+  brew:
+    package: coreutils
+    command: brew install coreutils

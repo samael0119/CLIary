@@ -1,0 +1,23 @@
+id: fzf
+name: fzf
+executables:
+- fzf
+description:
+  en: Interactive fuzzy finder for the terminal.
+  zh-CN: 终端交互式模糊搜索工具。
+categories:
+- search
+tags:
+- interactive
+- filter
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: fzf
+    command: sudo apt install fzf
+  brew:
+    package: fzf
+    command: brew install fzf

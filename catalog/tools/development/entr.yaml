@@ -1,0 +1,22 @@
+id: entr
+name: entr
+executables:
+- entr
+description:
+  en: Run commands when files change.
+  zh-CN: 文件变化时自动运行命令。
+categories:
+- development
+tags:
+- files
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: entr
+    command: sudo apt install entr
+  brew:
+    package: entr
+    command: brew install entr

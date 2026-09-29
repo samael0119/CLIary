@@ -1,0 +1,23 @@
+id: kubectl
+name: kubectl
+executables:
+- kubectl
+description:
+  en: Control Kubernetes clusters.
+  zh-CN: 管理 Kubernetes 集群。
+categories:
+- development
+tags:
+- container
+- remote
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: kubectl
+    command: sudo apt install kubectl
+  brew:
+    package: kubernetes-cli
+    command: brew install kubernetes-cli

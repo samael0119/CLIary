@@ -1,0 +1,29 @@
+id: htop
+name: htop
+executables:
+- htop
+description:
+  en: Interactive process viewer.
+  zh-CN: 交互式进程监控工具。
+categories:
+- monitoring
+tags:
+- tui
+- process
+- interactive
+platforms:
+- linux
+- macos
+similar:
+- btop
+- top
+features:
+  tui: true
+  interactive: true
+install:
+  apt:
+    package: htop
+    command: sudo apt install htop
+  brew:
+    package: htop
+    command: brew install htop

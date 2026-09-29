@@ -1,0 +1,20 @@
+id: ssh
+name: ssh
+executables:
+- ssh
+description:
+  en: Connect securely to remote systems.
+  zh-CN: 安全连接远程主机。
+categories:
+- network
+tags:
+- remote
+- encryption
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: openssh-client
+    command: sudo apt install openssh-client

@@ -1,0 +1,24 @@
+id: zellij
+name: zellij
+executables:
+- zellij
+description:
+  en: Terminal workspace and multiplexer.
+  zh-CN: 终端工作区与会话管理工具。
+categories:
+- shell
+tags:
+- tui
+- interactive
+platforms:
+- linux
+- macos
+similar:
+- tmux
+features:
+  tui: true
+  interactive: true
+install:
+  brew:
+    package: zellij
+    command: brew install zellij

@@ -1,0 +1,21 @@
+id: bottom
+name: bottom
+executables:
+- btm
+description:
+  en: Graphical process and system monitor in a terminal.
+  zh-CN: 终端进程与资源图形监控工具。
+categories:
+- monitoring
+tags:
+- tui
+- process
+platforms:
+- linux
+- macos
+similar:
+- btop
+install:
+  brew:
+    package: bottom
+    command: brew install bottom

@@ -1,0 +1,42 @@
+id: dua
+name: dua
+executables:
+- dua
+description:
+  en: Disk usage analyzer and management tool.
+  zh-CN: 磁盘占用分析与清理工具。
+categories:
+- filesystem
+tags:
+- disk
+- storage
+- interactive
+platforms:
+- linux
+- macos
+similar:
+- ncdu
+keywords:
+  zh-CN:
+  - 磁盘空间
+  - 找大文件
+install:
+  brew:
+    package: dua-cli
+    command: brew install dua-cli
+  cargo:
+    package: dua-cli
+    command: cargo install dua-cli
+homepage: https://github.com/Byron/dua-cli
+repository: https://github.com/Byron/dua-cli
+license: MIT
+implementation_language: Rust
+maintenance_status: active
+features:
+  tui: true
+  interactive: true
+  delete_files: true
+  parallel_scan: true
+common_commands:
+- dua
+- dua i

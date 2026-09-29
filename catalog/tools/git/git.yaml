@@ -1,0 +1,22 @@
+id: git
+name: git
+executables:
+- git
+description:
+  en: Distributed version control system.
+  zh-CN: 分布式版本控制工具。
+categories:
+- git
+tags:
+- files
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: git
+    command: sudo apt install git
+  brew:
+    package: git
+    command: brew install git

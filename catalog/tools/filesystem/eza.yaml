@@ -1,0 +1,23 @@
+id: eza
+name: eza
+executables:
+- eza
+description:
+  en: Modern file listing tool.
+  zh-CN: 现代化文件列表工具。
+categories:
+- filesystem
+tags:
+- files
+platforms:
+- linux
+- macos
+similar:
+- ls
+install:
+  apt:
+    package: eza
+    command: sudo apt install eza
+  brew:
+    package: eza
+    command: brew install eza

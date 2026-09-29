@@ -1,0 +1,22 @@
+id: watch
+name: watch
+executables:
+- watch
+description:
+  en: Run a command repeatedly and show its output.
+  zh-CN: 重复运行命令并查看输出。
+categories:
+- shell
+tags:
+- interactive
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: procps
+    command: sudo apt install procps
+  brew:
+    package: watch
+    command: brew install watch

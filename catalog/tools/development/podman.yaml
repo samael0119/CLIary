@@ -1,0 +1,23 @@
+id: podman
+name: podman
+executables:
+- podman
+description:
+  en: Manage containers and pods.
+  zh-CN: 管理容器和 Pod。
+categories:
+- development
+tags:
+- container
+platforms:
+- linux
+- macos
+similar:
+- docker
+install:
+  apt:
+    package: podman
+    command: sudo apt install podman
+  brew:
+    package: podman
+    command: brew install podman

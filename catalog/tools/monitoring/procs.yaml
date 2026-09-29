@@ -1,0 +1,19 @@
+id: procs
+name: procs
+executables:
+- procs
+description:
+  en: Modern replacement for process listings.
+  zh-CN: 现代化进程列表查看工具。
+categories:
+- monitoring
+tags:
+- process
+platforms:
+- linux
+- macos
+similar: []
+install:
+  brew:
+    package: procs
+    command: brew install procs

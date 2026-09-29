@@ -1,0 +1,20 @@
+id: docker
+name: docker
+executables:
+- docker
+description:
+  en: Build and run application containers.
+  zh-CN: 构建和运行应用容器。
+categories:
+- development
+tags:
+- container
+platforms:
+- linux
+- macos
+similar:
+- podman
+install:
+  brew:
+    package: docker
+    command: brew install docker

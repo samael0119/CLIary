@@ -1,0 +1,26 @@
+id: yt-dlp
+name: yt-dlp
+executables:
+- yt-dlp
+description:
+  en: Download video and audio from supported sites.
+  zh-CN: 从支持的网站下载视频和音频。
+categories:
+- media
+tags:
+- video
+- download
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: yt-dlp
+    command: sudo apt install yt-dlp
+  brew:
+    package: yt-dlp
+    command: brew install yt-dlp
+  pipx:
+    package: yt-dlp
+    command: pipx install yt-dlp

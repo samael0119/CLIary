@@ -1,0 +1,24 @@
+id: nvim
+name: nvim
+executables:
+- nvim
+description:
+  en: Extensible terminal text editor.
+  zh-CN: 可扩展的终端文本编辑器。
+categories:
+- text
+tags:
+- editor
+- interactive
+platforms:
+- linux
+- macos
+similar:
+- vim
+install:
+  apt:
+    package: neovim
+    command: sudo apt install neovim
+  brew:
+    package: neovim
+    command: brew install neovim

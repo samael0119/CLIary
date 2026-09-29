@@ -1,0 +1,22 @@
+id: ffmpeg
+name: ffmpeg
+executables:
+- ffmpeg
+description:
+  en: Convert and process audio and video.
+  zh-CN: 转换和处理音视频文件。
+categories:
+- media
+tags:
+- video
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: ffmpeg
+    command: sudo apt install ffmpeg
+  brew:
+    package: ffmpeg
+    command: brew install ffmpeg

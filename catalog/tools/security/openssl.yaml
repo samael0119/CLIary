@@ -1,0 +1,19 @@
+id: openssl
+name: openssl
+executables:
+- openssl
+description:
+  en: Cryptography and TLS command-line toolkit.
+  zh-CN: 加密与 TLS 命令行工具。
+categories:
+- security
+tags:
+- encryption
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: openssl
+    command: sudo apt install openssl

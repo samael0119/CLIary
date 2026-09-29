@@ -1,0 +1,23 @@
+id: du
+name: du
+executables:
+- du
+description:
+  en: Report file and directory disk usage.
+  zh-CN: 查看文件和目录的磁盘占用。
+categories:
+- filesystem
+tags:
+- disk
+- storage
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: coreutils
+    command: sudo apt install coreutils
+  brew:
+    package: coreutils
+    command: brew install coreutils

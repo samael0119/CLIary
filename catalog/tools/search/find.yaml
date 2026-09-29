@@ -1,0 +1,24 @@
+id: find
+name: find
+executables:
+- find
+description:
+  en: Search files by name and properties.
+  zh-CN: 按名称和属性查找文件。
+categories:
+- search
+tags:
+- files
+- filter
+platforms:
+- linux
+- macos
+similar:
+- fd
+install:
+  apt:
+    package: findutils
+    command: sudo apt install findutils
+  brew:
+    package: findutils
+    command: brew install findutils

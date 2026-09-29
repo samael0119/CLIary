@@ -1,0 +1,23 @@
+id: tig
+name: tig
+executables:
+- tig
+description:
+  en: Text-mode interface for Git.
+  zh-CN: Git 终端交互界面。
+categories:
+- git
+tags:
+- tui
+- interactive
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: tig
+    command: sudo apt install tig
+  brew:
+    package: tig
+    command: brew install tig

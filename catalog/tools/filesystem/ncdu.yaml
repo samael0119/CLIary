@@ -1,0 +1,49 @@
+id: ncdu
+name: ncdu
+executables:
+- ncdu
+description:
+  en: Interactive disk usage analyzer.
+  zh-CN: 交互式磁盘占用分析工具，可查找大文件。
+categories:
+- filesystem
+tags:
+- disk
+- storage
+- tui
+- interactive
+platforms:
+- linux
+- macos
+similar:
+- gdu
+- dust
+- dua
+keywords:
+  en:
+  - disk usage
+  - large files
+  zh-CN:
+  - 磁盘空间
+  - 找大文件
+  - 磁盘占用
+features:
+  tui: true
+  interactive: true
+  delete_files: true
+  parallel_scan: true
+install:
+  apt:
+    package: ncdu
+    command: sudo apt install ncdu
+  brew:
+    package: ncdu
+    command: brew install ncdu
+homepage: https://dev.yorhel.nl/ncdu
+repository: https://code.blicky.net/yorhel/ncdu
+license: MIT
+implementation_language: Zig / C
+maintenance_status: active
+common_commands:
+- ncdu /
+- ncdu -x /

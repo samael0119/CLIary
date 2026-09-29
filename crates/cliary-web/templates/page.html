@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0d382e">
+  <title>{{ display_title }} · CLIary</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="/assets/htmx.min.js" defer></script>
+  <script>
+    (function(){
+      var t = localStorage.getItem('cliary-theme');
+      if (t) {
+        document.documentElement.setAttribute('data-theme', t);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="CLIary home">
+        <span class="brand-mark"></span>
+        <span class="brand-word">CLIary<small>YOUR TOOL COMPANION</small></span>
+      </a>
+      <div class="sidebar-label">{% if lang == "zh-CN" %}工作空间{% else %}WORKSPACE{% endif %}</div>
+      <nav class="side-nav" aria-label="{% if lang == "zh-CN" %}主导航{% else %}Main navigation{% endif %}" hx-boost="true">
+        <a href="/" {% if active == "home" %}class="active" aria-current="page"{% endif %}><span class="nav-icon">⌂</span>{% if lang == "zh-CN" %}概览{% else %}Overview{% endif %}</a>
+        <a href="/search" {% if active == "search" || active == "tool" %}class="active" aria-current="page"{% endif %}><span class="nav-icon">⌕</span>{% if lang == "zh-CN" %}发现工具{% else %}Discover{% endif %}</a>
+        <a href="/installed" {% if active == "installed" %}class="active" aria-current="page"{% endif %}><span class="nav-icon">▤</span>{% if lang == "zh-CN" %}已安装{% else %}Installed{% endif %}</a>
+        <a href="/categories" {% if active == "categories" %}class="active" aria-current="page"{% endif %}><span class="nav-icon">▦</span>{% if lang == "zh-CN" %}分类目录{% else %}Categories{% endif %}</a>
+        <a href="/favorites" {% if active == "favorites" %}class="active" aria-current="page"{% endif %}><span class="nav-icon">♡</span>{% if lang == "zh-CN" %}我的收藏{% else %}Favorites{% endif %}</a>
+        <div class="nav-separator"></div>
+        <a href="/compare" {% if active == "compare" %}class="active" aria-current="page"{% endif %}><span class="nav-icon">⇄</span>{% if lang == "zh-CN" %}工具比较{% else %}Compare{% endif %}</a>
+        <a href="/history" {% if active == "history" %}class="active" aria-current="page"{% endif %}><span class="nav-icon">◷</span>{% if lang == "zh-CN" %}使用历史{% else %}History{% endif %}</a>
+        <a href="/stats" {% if active == "stats" %}class="active" aria-current="page"{% endif %}><span class="nav-icon">▥</span>{% if lang == "zh-CN" %}统计分析{% else %}Statistics{% endif %}</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <span class="local-dot"></span>
+        <div><strong>{% if lang == "zh-CN" %}本地工作空间{% else %}Local workspace{% endif %}</strong><small>{% if lang == "zh-CN" %}数据保存在这台设备{% else %}Your data stays on this device{% endif %}</small></div>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-context">
+          <span class="topbar-overline">CLIARY / {% if lang == "zh-CN" %}工作空间{% else %}WORKSPACE{% endif %}</span>
+          <span style="opacity:0.4;">/</span>
+          <strong>{{ display_title }}</strong>
+        </div>
+        <div class="topbar-actions">
+          <a href="/search" class="quick-search-kbd" title="快捷搜索 (快捷键 ⌘K / /)">
+            <span>⌕ {% if lang == "zh-CN" %}快捷搜索{% else %}Search{% endif %}</span>
+            <span class="kbd-tag">⌘K</span>
+          </a>
+          <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
+          <span class="topbar-private"><span class="local-dot" style="width:6px; height:6px;"></span>{% if lang == "zh-CN" %}本地运行{% else %}Local only{% endif %}</span>
+          <form method="post" action="/language" aria-label="Language"><input type="hidden" name="csrf" value="{{ csrf }}"><select name="language" onchange="this.form.submit()"><option value="en" {% if lang == "en" %}selected{% endif %}>English</option><option value="zh-CN" {% if lang == "zh-CN" %}selected{% endif %}>简体中文</option></select></form>
+        </div>
+      </header>
+      <main id="main-content">{{ body|safe }}</main>
+      <footer><span>CLIary</span><span>{% if lang == "zh-CN" %}发现你的工具，也记住你如何使用它们。{% else %}Discover your tools. Remember how you use them.{% endif %}</span></footer>
+    </div>
+  </div>
+  <script>
+    function updateThemeBtn() {
+      var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      var btn = document.getElementById('theme-toggle');
+      if (btn) btn.innerText = isDark ? '☀️' : '🌙';
+    }
+    function toggleTheme() {
+      var cur = document.documentElement.getAttribute('data-theme');
+      var next = cur === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('cliary-theme', next);
+      updateThemeBtn();
+    }
+    updateThemeBtn();
+
+    function copySnippet(btn, text) {
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(function() {
+        var orig = btn.innerText;
+        btn.innerText = '✓ {% if lang == "zh-CN" %}已复制{% else %}Copied{% endif %}';
+        btn.style.color = 'var(--green)';
+        btn.style.borderColor = 'var(--green)';
+        setTimeout(function() {
+          btn.innerText = orig;
+          btn.style.color = '';
+          btn.style.borderColor = '';
+        }, 1800);
+      }).catch(function(){});
+    }
+
+    if (!window.__cliaryInteractionsBound) {
+      window.__cliaryInteractionsBound = true;
+      document.addEventListener('click', function(e) {
+        var btn = e.target.closest('button[data-copy]');
+        if (btn) copySnippet(btn, btn.getAttribute('data-copy'));
+      });
+      document.addEventListener('keydown', function(e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          var inp = document.querySelector('input[name="q"]');
+          if (inp) inp.focus();
+          else window.location.href = '/search';
+        }
+      });
+    }
+  </script>
+</body>
+</html>

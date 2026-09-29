@@ -1,0 +1,23 @@
+id: cat
+name: cat
+executables:
+- cat
+description:
+  en: Print file contents.
+  zh-CN: 输出文件内容。
+categories:
+- text
+tags:
+- files
+platforms:
+- linux
+- macos
+similar:
+- bat
+install:
+  apt:
+    package: coreutils
+    command: sudo apt install coreutils
+  brew:
+    package: coreutils
+    command: brew install coreutils

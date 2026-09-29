@@ -1,0 +1,24 @@
+id: vim
+name: vim
+executables:
+- vim
+description:
+  en: Terminal text editor.
+  zh-CN: 终端文本编辑器。
+categories:
+- text
+tags:
+- editor
+- interactive
+platforms:
+- linux
+- macos
+similar:
+- nvim
+install:
+  apt:
+    package: vim
+    command: sudo apt install vim
+  brew:
+    package: vim
+    command: brew install vim

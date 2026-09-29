@@ -1,0 +1,22 @@
+id: awk
+name: awk
+executables:
+- awk
+description:
+  en: Pattern scanning and text processing language.
+  zh-CN: 按字段和模式处理文本。
+categories:
+- text
+tags:
+- filter
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: gawk
+    command: sudo apt install gawk
+  brew:
+    package: gawk
+    command: brew install gawk

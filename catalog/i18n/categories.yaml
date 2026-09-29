@@ -1,0 +1,27 @@
+- id: filesystem
+  name: {en: Filesystem, zh-CN: 文件系统}
+  keywords: {en: [disk, files], zh-CN: [磁盘, 文件, 空间]}
+- id: search
+  name: {en: Search, zh-CN: 搜索}
+  keywords: {en: [find], zh-CN: [查找, 搜索]}
+- id: text
+  name: {en: Text, zh-CN: 文本}
+- id: network
+  name: {en: Network, zh-CN: 网络}
+- id: http
+  name: {en: HTTP, zh-CN: 网页请求}
+- id: git
+  name: {en: Git, zh-CN: 版本控制}
+- id: monitoring
+  name: {en: Monitoring, zh-CN: 系统监控}
+- id: development
+  name: {en: Development, zh-CN: 开发}
+- id: media
+  name: {en: Media, zh-CN: 媒体}
+- id: database
+  name: {en: Database, zh-CN: 数据库}
+- id: shell
+  name: {en: Shell, zh-CN: 终端}
+- id: security
+  name: {en: Security, zh-CN: 安全}
+

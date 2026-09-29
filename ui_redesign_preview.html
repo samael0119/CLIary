@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CLIary 网页美化方案对比预览 · UI Redesign Preview</title>
+  <style>
+    /* ==========================================================================
+       1. PREVIEW CONTROL BAR & SHELL
+       ========================================================================== */
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: #0f1416;
+      color: #e5ede9;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    /* Sticky Top Control Toolbar */
+    .preview-header {
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      background: rgba(15, 20, 22, 0.94);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 10px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .preview-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .preview-logo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      border-radius: 6px;
+      letter-spacing: -0.02em;
+    }
+    .preview-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e6ede8;
+    }
+    .preview-subtitle {
+      font-size: 12px;
+      color: #8da498;
+    }
+
+    .preview-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .seg-group {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 3px;
+      border-radius: 8px;
+    }
+    .seg-btn {
+      background: transparent;
+      border: none;
+      color: #9cb1a5;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .seg-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .seg-btn.active {
+      background: #10b981;
+      color: #04291e;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .theme-toggle-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e5ede9;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .theme-toggle-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
+
+    .badge-notes-btn {
+      background: #233831;
+      border: 1px solid #366051;
+      color: #5eead4;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .badge-notes-btn:hover {
+      background: #2e4a41;
+    }
+
+    /* Comparison Stage */
+    .comparison-stage {
+      display: flex;
+      min-height: calc(100vh - 65px);
+      width: 100%;
+      position: relative;
+    }
+    .comparison-stage.view-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .comparison-stage.view-after .pane-before {
+      display: none !important;
+    }
+    .comparison-stage.view-before .pane-after {
+      display: none !important;
+    }
+
+    .pane {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .pane-before {
+      border-right: 2px solid rgba(255, 255, 255, 0.15);
+      background: #f7f8f5;
+      color: #20302d;
+    }
+    .pane-label-badge {
+      position: sticky;
+      top: 60px;
+      z-index: 800;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 20px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .pane-before .pane-label-badge {
+      background: #e5ebe6;
+      color: #495e54;
+      border-bottom: 1px solid #d4ded6;
+    }
+    .pane-after .pane-label-badge {
+      background: #143229;
+      color: #34d399;
+      border-bottom: 1px solid #1e4a3c;
+    }
+
+    .pane-content {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    /* ==========================================================================
+       2. CURRENT / BEFORE DESIGN (Original CSS extracted & scoped)
+       ========================================================================== */
+    .scope-before {
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+      color: #20302d;
+      background: #f7f8f5;
+      --ink: #20302d;
+      --muted: #7c8a85;
+      --line: #e5ebe6;
+      --green: #137966;
+      --surface: #fff;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .scope-before a { color: inherit; text-decoration: none; }
+    .scope-before .app-shell { min-height: 100%; display: grid; grid-template-columns: 210px minmax(0, 1fr); }
+    .scope-before .sidebar { background: #fbfcfa; border-right: 1px solid #e9eee9; padding: 24px 14px; display: flex; flex-direction: column; min-height: 100vh; }
+    .scope-before .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 36px; }
+    .scope-before .brand-mark { width: 32px; height: 32px; border-radius: 9px; display: grid; grid-template-columns: repeat(2, 6px); grid-template-rows: repeat(2, 6px); align-content: center; justify-content: center; gap: 3px; background: #167b67; transform: rotate(-7deg); }
+    .scope-before .brand-mark span { background: #fff; border-radius: 2px; }
+    .scope-before .brand-word { font-size: 20px; font-weight: 800; color: #183c33; line-height: 1; }
+    .scope-before .brand-word small { display: block; font-size: 8px; color: #a3b1a8; letter-spacing: 0.16em; margin-top: 4px; }
+    .scope-before .sidebar-label { font-size: 9px; color: #a6b1aa; font-weight: 800; margin: 0 10px 10px; }
+    .scope-before .side-nav { display: grid; gap: 2px; }
+    .scope-before .side-nav a { min-height: 38px; display: flex; gap: 10px; align-items: center; padding: 0 12px; font-size: 13px; font-weight: 600; color: #667771; border-radius: 8px; }
+    .scope-before .side-nav a.active { color: #126c5b; background: #e7f3ec; font-weight: 700; }
+    .scope-before .nav-separator { height: 1px; background: #e7ece7; margin: 10px; }
+    .scope-before .sidebar-bottom { margin-top: auto; padding: 12px; border: 1px solid #e3eae4; background: #f4f8f3; border-radius: 9px; font-size: 11px; }
+    .scope-before .topbar { height: 64px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--line); padding: 0 28px; background: #fff; }
+    .scope-before .topbar-overline { font-size: 9px; color: #a3aea8; font-weight: 800; }
+    .scope-before main { padding: 28px; max-width: 1200px; margin: 0 auto; }
+    .scope-before .hero { display: grid; grid-template-columns: 1.1fr 0.9fr; background: linear-gradient(112deg, #103d36 0%, #0e5447 66%, #0c604e 100%); color: #fff; border-radius: 14px; overflow: hidden; padding: 32px 28px; gap: 20px; }
+    .scope-before .hero h1 { font-size: 32px; line-height: 1.1; margin: 12px 0 10px; color: #fff; }
+    .scope-before .hero h1 em { font-style: normal; color: #a5ebc9; }
+    .scope-before .hero p { font-size: 12px; color: #d1e2d9; margin-bottom: 18px; line-height: 1.5; }
+    .scope-before .hero-search { display: flex; background: #fff; border-radius: 8px; padding: 4px 6px; }
+    .scope-before .hero-search input { border: none; flex: 1; padding: 8px; font-size: 12px; outline: none; }
+    .scope-before .hero-search button { background: #1b9478; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .scope-before .terminal { background: #101e1e; border: 1px solid #a0d2bd44; border-radius: 10px; padding: 12px; color: #d2e0d8; font-family: var(--mono); font-size: 10px; transform: rotate(-3deg); }
+    .scope-before .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+    .scope-before .metric-card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; min-height: 100px; }
+    .scope-before .metric-card strong { font-size: 24px; color: #22372e; }
+    .scope-before .metric-card span { font-size: 11px; color: #83938a; }
+    .scope-before .dashboard-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; }
+    .scope-before .panel { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+    .scope-before .rank-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #eff2ee; font-size: 12px; }
+    .scope-before .rank-track { flex: 1; height: 6px; background: #ecf3ed; border-radius: 4px; overflow: hidden; }
+    .scope-before .rank-track span { display: block; height: 100%; background: #1a9975; }
+
+    /* ==========================================================================
+       3. PROPOSED / AFTER REDESIGN DESIGN SYSTEM
+       ========================================================================== */
+    .scope-after {
+      /* Dynamic Theme Variables */
+      --after-bg: #f8faf9;
+      --after-surface: #ffffff;
+      --after-surface-elevated: #ffffff;
+      --after-surface-sunken: #f0f4f2;
+      --after-border: #e2ebe5;
+      --after-border-subtle: #edf3ef;
+      --after-border-strong: #cad8d0;
+      --after-text: #13241d;
+      --after-text-secondary: #4a6155;
+      --after-text-muted: #7d9489;
+      --after-primary: #059669;
+      --after-primary-hover: #047857;
+      --after-primary-light: #ecfdf5;
+      --after-primary-border: #a7f3d0;
+      --after-accent: #0284c7;
+      --after-tag-bg: #f0f7f3;
+      --after-tag-text: #065f46;
+      --after-shadow-sm: 0 1px 3px rgba(13, 36, 28, 0.05);
+      --after-shadow-md: 0 6px 18px -3px rgba(13, 36, 28, 0.07), 0 2px 6px -2px rgba(13, 36, 28, 0.04);
+      --after-shadow-lg: 0 16px 36px -6px rgba(13, 36, 28, 0.11), 0 4px 12px -2px rgba(13, 36, 28, 0.05);
+      --after-font-mono: "JetBrains Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --after-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+      --sidebar-width: 260px;
+    }
+
+    /* Dark Mode Overrides */
+    .scope-after.theme-dark {
+      --after-bg: #090e0c;
+      --after-surface: #101715;
+      --after-surface-elevated: #15201c;
+      --after-surface-sunken: #0c1210;
+      --after-border: rgba(255, 255, 255, 0.08);
+      --after-border-subtle: rgba(255, 255, 255, 0.04);
+      --after-border-strong: rgba(255, 255, 255, 0.16);
+      --after-text: #f1f7f4;
+      --after-text-secondary: #a3bcaf;
+      --after-text-muted: #647d71;
+      --after-primary: #10b981;
+      --after-primary-hover: #34d399;
+      --after-primary-light: rgba(16, 185, 129, 0.12);
+      --after-primary-border: rgba(16, 185, 129, 0.28);
+      --after-accent: #38bdf8;
+      --after-tag-bg: rgba(16, 185, 129, 0.1);
+      --after-tag-text: #6ee7b7;
+      --after-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+      --after-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.55);
+      --after-shadow-lg: 0 20px 48px rgba(0, 0, 0, 0.7);
+    }
+
+    .scope-after {
+      background: var(--after-bg);
+      color: var(--after-text);
+      font-family: var(--after-font-sans);
+      min-height: 100%;
+      line-height: 1.5;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    .scope-after a { color: inherit; text-decoration: none; }
+    .scope-after code { font-family: var(--after-font-mono); }
+
+    /* Redesigned Layout Shell */
+    .scope-after .neo-app-shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    /* Redesigned Sidebar */
+    .scope-after .neo-sidebar {
+      background: var(--after-surface);
+      border-right: 1px solid var(--after-border);
+      padding: 24px 16px 20px;
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      transition: all 0.2s ease;
+    }
+    .scope-after .neo-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 10px;
+      margin-bottom: 24px;
+      border-radius: 10px;
+      transition: background 0.15s ease;
+    }
+    .scope-after .neo-brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      color: #fff;
+      font-weight: 900;
+      font-size: 16px;
+      font-family: var(--after-font-mono);
+      position: relative;
+      overflow: hidden;
+    }
+    .scope-after .neo-brand-mark::after {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%);
+      transform: rotate(25deg);
+    }
+    .scope-after .neo-brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: var(--after-text);
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
+    }
+    .scope-after .neo-brand-title small {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--after-text-muted);
+      margin-top: 2px;
+    }
+
+    .scope-after .neo-nav-group-title {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: var(--after-text-muted);
+      padding: 10px 12px 6px;
+      text-transform: uppercase;
+    }
+
+    .scope-after .neo-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .scope-after .neo-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--after-text-secondary);
+      border-radius: 9px;
+      transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .scope-after .neo-nav-item:hover {
+      color: var(--after-text);
+      background: var(--after-surface-sunken);
+    }
+    .scope-after .neo-nav-item.active {
+      color: var(--after-primary);
+      background: var(--after-primary-light);
+      font-weight: 700;
+    }
+    .scope-after .neo-nav-item.active::before {
+      content: "";
+      position: absolute;
+      left: -2px;
+      top: 8px;
+      bottom: 8px;
+      width: 4px;
+      border-radius: 4px;
+      background: var(--after-primary);
+    }
+    .scope-after .neo-nav-icon {
+      width: 18px;
+      height: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.85;
+      font-size: 15px;
+    }
+    .scope-after .neo-nav-count {
+      margin-left: auto;
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 12px;
+      background: var(--after-surface-sunken);
+      color: var(--after-text-muted);
+      font-weight: 600;
+      font-family: var(--after-font-mono);
+    }
+
+    .scope-after .neo-sidebar-footer {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--after-border-subtle);
+    }
+    .scope-after .neo-local-status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--after-surface-sunken);
+      border: 1px solid var(--after-border-subtle);
+      border-radius: 10px;
+    }
+    .scope-after .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+      animation: neo-pulse 2s infinite;
+    }
+    @keyframes neo-pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+      70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .scope-after .neo-local-text strong {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--after-text);
+    }
+    .scope-after .neo-local-text small {
+      display: block;
+      font-size: 10px;
+      color: var(--after-text-muted);
+    }
+
+    /* Redesigned Workspace Area */
+    .scope-after .neo-workspace {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    /* Redesigned Topbar */
+    .scope-after .neo-topbar {
+      height: 64px;
+      background: var(--after-surface);
+      border-bottom: 1px solid var(--after-border);
+      padding: 0 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+    }
+    .scope-after .neo-breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+    .scope-after .neo-breadcrumbs .sep {
+      color: var(--after-text-muted);
+      font-size: 11px;
+    }
+    .scope-after .neo-breadcrumbs .crumb-current {
+      font-weight: 700;
+      color: var(--after-text);
+    }
+
+    .scope-after .neo-topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .scope-after .neo-quick-search-trigger {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--after-surface-sunken);
+      border: 1px solid var(--after-border);
+      padding: 6px 12px;
+      border-radius: 8px;
+      color: var(--after-text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .scope-after .neo-quick-search-trigger:hover {
+      border-color: var(--after-primary);
+      color: var(--after-text);
+    }
+    .scope-after .neo-kbd {
+      background: var(--after-surface);
+      border: 1px solid var(--after-border-strong);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: var(--after-font-mono);
+      font-weight: 700;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+      color: var(--after-text-secondary);
+    }
+
+    /* Redesigned Main Content */
+    .scope-after .neo-main {
+      padding: 32px 36px 64px;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ==========================================================================
+       VIEW: OVERVIEW (HOME) REDESIGN
+       ========================================================================== */
+    .scope-after .neo-hero {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      padding: 40px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 32px;
+      align-items: center;
+      background: linear-gradient(135deg, #09261f 0%, #0d382e 50%, #0b493b 100%);
+      border: 1px solid rgba(16, 185, 129, 0.22);
+      box-shadow: 0 20px 40px -12px rgba(5, 41, 32, 0.35);
+      color: #fff;
+    }
+    .scope-after .neo-hero::before {
+      content: "";
+      position: absolute;
+      top: -30%;
+      right: 10%;
+      width: 480px;
+      height: 480px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .scope-after .neo-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      background: rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(52, 211, 153, 0.3);
+      color: #6ee7b7;
+      border-radius: 30px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    .scope-after .neo-hero h1 {
+      font-size: clamp(32px, 3.2vw, 46px);
+      line-height: 1.12;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin: 0 0 14px;
+      color: #ffffff;
+    }
+    .scope-after .neo-hero h1 em {
+      font-style: normal;
+      background: linear-gradient(90deg, #6ee7b7, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .scope-after .neo-hero p {
+      font-size: 14px;
+      color: #cbdad2;
+      margin: 0 0 24px;
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    .scope-after .neo-command-search {
+      display: flex;
+      align-items: center;
+      background: #ffffff;
+      padding: 6px 8px 6px 16px;
+      border-radius: 12px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+      max-width: 520px;
+    }
+    .scope-after.theme-dark .neo-command-search {
+      background: #14201c;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .scope-after .neo-command-search input {
+      border: none;
+      outline: none;
+      background: transparent;
+      flex: 1;
+      font-size: 14px;
+      color: #13241d;
+      font-family: inherit;
+    }
+    .scope-after.theme-dark .neo-command-search input {
+      color: #f1f7f4;
+    }
+    .scope-after .neo-command-search button {
+      background: #059669;
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      font-size: 13px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .scope-after .neo-command-search button:hover {
+      background: #10b981;
+      transform: translateY(-1px);
+    }
+
+    /* Redesigned Modern Terminal Mockup */
+    .scope-after .neo-terminal-wrap {
+      position: relative;
+      perspective: 1000px;
+    }
+    .scope-after .neo-terminal-window {
+      background: #0d1312;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 24px 48px -8px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(16, 185, 129, 0.15);
+      transform: rotateY(-3deg) rotateX(2deg);
+      transition: transform 0.3s ease;
+    }
+    .scope-after .neo-terminal-window:hover {
+      transform: rotateY(0deg) rotateX(0deg);
+    }
+    .scope-after .neo-terminal-header {
+      background: #16201e;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .scope-after .neo-traffic-lights {
+      display: flex;
+      gap: 6px;
+    }
+    .scope-after .neo-traffic-lights span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: block;
+    }
+    .scope-after .neo-dot-red { background: #f87171; }
+    .scope-after .neo-dot-yellow { background: #fbbf24; }
+    .scope-after .neo-dot-green { background: #34d399; }
+    .scope-after .neo-terminal-title {
+      font-family: var(--after-font-mono);
+      font-size: 11px;
+      color: #8da498;
+    }
+    .scope-after .neo-terminal-body {
+      padding: 18px 20px;
+      font-family: var(--after-font-mono);
+      font-size: 12px;
+      line-height: 1.7;
+      color: #e2ede8;
+    }
+    .scope-after .neo-t-prompt { color: #34d399; font-weight: 700; margin-right: 6px; }
+    .scope-after .neo-t-cmd { color: #f3f4f6; }
+    .scope-after .neo-t-arg { color: #fde047; }
+    .scope-after .neo-t-res { color: #93c5fd; padding-left: 14px; display: flex; justify-content: space-between; }
+    .scope-after .neo-t-desc { color: #6ee7b7; opacity: 0.8; }
+    .scope-after .neo-t-cursor {
+      display: inline-block;
+      width: 7px;
+      height: 13px;
+      background: #34d399;
+      vertical-align: middle;
+      animation: neo-blink 1s step-end infinite;
+    }
+    @keyframes neo-blink { 50% { opacity: 0; } }
+
+    /* Redesigned Metrics Grid */
+    .scope-after .neo-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 28px 0;
+    }
+    .scope-after .neo-metric-card {
+      background: var(--after-surface);
+      border: 1px solid var(--after-border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      box-shadow: var(--after-shadow-sm);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .scope-after .neo-metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--after-shadow-md);
+      border-color: var(--after-primary-border);
+    }
+    .scope-after .neo-metric-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: transparent;
+      transition: background 0.2s ease;
+    }
+    .scope-after .neo-metric-card:hover::before {
+      background: linear-gradient(90deg, #10b981, #0284c7);
+    }
+    .scope-after .neo-metric-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .scope-after .neo-metric-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .scope-after .neo-icon-green { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .scope-after .neo-icon-purple { background: rgba(168, 85, 247, 0.12); color: #a855f7; }
+    .scope-after .neo-icon-amber { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+    .scope-after .neo-icon-blue { background: rgba(14, 165, 233, 0.12); color: #0ea5e9; }
+    .scope-after .neo-metric-trend {
+      font-size: 11px;
+      font-weight: 700;
+      color: #10b981;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .scope-after .neo-metric-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1;
+      color: var(--after-text);
+      font-family: var(--after-font-sans);
+    }
+    .scope-after .neo-metric-label {
+      font-size: 12px;
+      color: var(--after-text-muted);
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    /* Redesigned Dashboard Grid */
+    .scope-after .neo-dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .scope-after .neo-panel {
+      background: var(--after-surface);
+      border: 1px solid var(--after-border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: var(--after-shadow-sm);
+    }
+    .scope-after .neo-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .scope-after .neo-panel-title-group h2 {
+      font-size: 16px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+      margin: 0;
+      color: var(--after-text);
+    }
+    .scope-after .neo-panel-subtitle {
+      font-size: 11px;
+      color: var(--after-text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .scope-after .neo-panel-action {
+      font-size: 12px;
+      color: var(--after-primary);
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: gap 0.2s ease;
+    }
+    .scope-after .neo-panel-action:hover {
+      gap: 7px;
+    }
+
+    /* Polished Rank List */
+    .scope-after .neo-rank-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      transition: background 0.15s ease;
+    }
+    .scope-after .neo-rank-item:hover {
+      background: var(--after-surface-sunken);
+    }
+    .scope-after .neo-rank-pos {
+      font-family: var(--after-font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--after-text-muted);
+      width: 20px;
+    }
+    .scope-after .neo-rank-name {
+      font-family: var(--after-font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--after-text);
+      width: 100px;
+    }
+    .scope-after .neo-rank-bar-bg {
+      flex: 1;
+      height: 8px;
+      background: var(--after-surface-sunken);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+    .scope-after .neo-rank-bar-fill {
+      height: 100%;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+      transition: width 0.5s ease;
+    }
+    .scope-after .neo-rank-count {
+      font-family: var(--after-font-mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--after-text-secondary);
+      min-width: 32px;
+      text-align: right;
+    }
+
+    /* Redesigned Category Cards */
+    .scope-after .neo-category-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .scope-after .neo-cat-card {
+      background: var(--after-surface);
+      border: 1px solid var(--after-border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--after-shadow-sm);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .scope-after .neo-cat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--after-shadow-md);
+      border-color: var(--after-primary-border);
+    }
+    .scope-after .neo-cat-symbol {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .scope-after .neo-cat-meta strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--after-text);
+      margin-bottom: 2px;
+    }
+    .scope-after .neo-cat-meta small {
+      font-size: 11px;
+      color: var(--after-text-muted);
+    }
+
+    /* ==========================================================================
+       VIEW: TOOL DETAIL REDESIGN (ncdu example)
+       ========================================================================== */
+    .scope-after .neo-detail-shell {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 28px;
+    }
+    .scope-after .neo-tool-hero {
+      background: var(--after-surface);
+      border: 1px solid var(--after-border);
+      border-radius: 18px;
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: var(--after-shadow-sm);
+    }
+    .scope-after .neo-tool-top-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .scope-after .neo-tool-identity {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .scope-after .neo-tool-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+      color: #fff;
+      font-family: var(--after-font-mono);
+      font-size: 24px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 16px rgba(16, 185, 129, 0.25);
+    }
+    .scope-after .neo-tool-title h1 {
+      margin: 0 0 4px;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: var(--after-text);
+      font-family: var(--after-font-mono);
+    }
+    .scope-after .neo-tool-desc {
+      font-size: 14px;
+      color: var(--after-text-secondary);
+      margin: 0;
+      line-height: 1.5;
+    }
+    .scope-after .neo-tool-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .scope-after .neo-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.16s ease;
+      border: 1px solid transparent;
+    }
+    .scope-after .neo-btn-primary {
+      background: var(--after-primary);
+      color: #fff;
+    }
+    .scope-after .neo-btn-primary:hover {
+      background: var(--after-primary-hover);
+    }
+    .scope-after .neo-btn-outline {
+      background: var(--after-surface);
+      border-color: var(--after-border-strong);
+      color: var(--after-text);
+    }
+    .scope-after .neo-btn-outline:hover {
+      background: var(--after-surface-sunken);
+    }
+
+    .scope-after .neo-tool-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid var(--after-border-subtle);
+    }
+    .scope-after .neo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--after-tag-bg);
+      color: var(--after-tag-text);
+      border: 1px solid var(--after-primary-border);
+    }
+
+    /* Redesigned Command Snippet with Copy Button */
+    .scope-after .neo-code-block {
+      background: var(--after-surface-sunken);
+      border: 1px solid var(--after-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: var(--after-font-mono);
+      font-size: 13px;
+      margin-bottom: 10px;
+      transition: border-color 0.2s ease;
+    }
+    .scope-after .neo-code-block:hover {
+      border-color: var(--after-primary-border);
+    }
+    .scope-after .neo-code-block code {
+      color: var(--after-text);
+      word-break: break-all;
+    }
+    .scope-after .neo-copy-btn {
+      background: var(--after-surface);
+      border: 1px solid var(--after-border);
+      color: var(--after-text-secondary);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .scope-after .neo-copy-btn:hover {
+      color: var(--after-primary);
+      border-color: var(--after-primary);
+    }
+
+    /* Annotation Callout Markers */
+    .upgrade-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #0ea5e9;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      margin-left: 6px;
+      box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.3);
+      cursor: help;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Global Preview Toolbar -->
+  <header class="preview-header">
+    <div class="preview-title-group">
+      <span class="preview-logo-badge">CLIary UI 2.0</span>
+      <div>
+        <div class="preview-title">CLIary 网页美化方案对比预览</div>
+        <div class="preview-subtitle">真实页面交互原型 · 无侵入预览</div>
+      </div>
+    </div>
+
+    <div class="preview-controls">
+      <!-- Contrast Mode Selector -->
+      <div class="seg-group" title="选择对比展示模式">
+        <button class="seg-btn active" onclick="setMode('split')">⇄ 左右分屏对比</button>
+        <button class="seg-btn" onclick="setMode('after')">✨ 仅看美化新方案</button>
+        <button class="seg-btn" onclick="setMode('before')">◻ 仅看当前原版</button>
+      </div>
+
+      <!-- Page View Selector -->
+      <div class="seg-group" title="切换页面视窗">
+        <button class="seg-btn active" id="btn-page-home" onclick="setPage('home')">⌂ 首页概览</button>
+        <button class="seg-btn" id="btn-page-tool" onclick="setPage('tool')">⚡ 工具详情页 (ncdu)</button>
+      </div>
+
+      <!-- Theme Switcher for New Design -->
+      <button class="theme-toggle-btn" onclick="toggleAfterTheme()" title="切换美化方案的主题模式">
+        <span id="theme-icon">🌙</span> <span id="theme-text">切换为深色模式</span>
+      </button>
+
+      <!-- Toggle Annotations -->
+      <button class="badge-notes-btn" onclick="toggleAnnotations()">
+        💡 <span id="annot-toggle-text">隐藏美化亮点标注</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Comparison Stage Container -->
+  <div class="comparison-stage view-split" id="comparisonStage">
+
+    <!-- ====================================================================
+         LEFT PANE: BEFORE (CURRENT ORIGINAL IMPLEMENTATION)
+         ==================================================================== -->
+    <div class="pane pane-before">
+      <div class="pane-label-badge">
+        <span>当前原始设计 (Current)</span>
+        <span style="font-weight: normal; font-size: 10px; opacity: 0.7;">现有系统实际样式</span>
+      </div>
+      <div class="pane-content scope-before">
+        <div class="app-shell">
+          <!-- Sidebar Before -->
+          <aside class="sidebar">
+            <div class="brand">
+              <span class="brand-mark"><span></span><span></span><span></span><span></span></span>
+              <span class="brand-word">CLIary<small>YOUR TOOL COMPANION</small></span>
+            </div>
+            <div class="sidebar-label">WORKSPACE</div>
+            <nav class="side-nav">
+              <a href="#" class="active"><span style="width:16px;">⌂</span>概览</a>
+              <a href="#"><span style="width:16px;">⌕</span>发现工具</a>
+              <a href="#"><span style="width:16px;">▤</span>已安装</a>
+              <a href="#"><span style="width:16px;">▦</span>分类目录</a>
+              <a href="#"><span style="width:16px;">♡</span>我的收藏</a>
+              <div class="nav-separator"></div>
+              <a href="#"><span style="width:16px;">⇄</span>工具比较</a>
+              <a href="#"><span style="width:16px;">◷</span>使用历史</a>
+              <a href="#"><span style="width:16px;">▥</span>统计分析</a>
+            </nav>
+            <div class="sidebar-bottom">
+              <span style="display:inline-block; width:6px; height:6px; background:#37a987; border-radius:50%; margin-right:4px;"></span>
+              <strong>本地工作空间</strong>
+              <div style="font-size:10px; color:#8ea095; margin-top:2px;">数据保存在这台设备</div>
+            </div>
+          </aside>
+
+          <!-- Main Workspace Before -->
+          <div style="min-width:0;">
+            <header class="topbar">
+              <div><span class="topbar-overline">CLIARY / 工作空间</span><br><strong style="font-size:14px; color:#3c5149;">概览</strong></div>
+              <div style="font-size:11px; color:#778b7d;">● 本地运行</div>
+            </header>
+
+            <!-- Home View Before -->
+            <main id="before-page-home">
+              <section class="hero">
+                <div>
+                  <div style="font-size:10px; font-weight:800; color:#78d8bb; letter-spacing:0.15em;">发现 · 整理 · 记住</div>
+                  <h1>你的工具，<br><em>尽在掌握。</em></h1>
+                  <p>为常用的命令行工具安个家，也发现下一个趁手的好工具。</p>
+                  <div class="hero-search">
+                    <span style="color:#94a99f; font-size:18px; margin-right:4px;">⌕</span>
+                    <input placeholder="试试“磁盘空间”或“disk usage”" readonly>
+                    <button>开始探索 ↗</button>
+                  </div>
+                  <div style="font-size:10px; color:#9bc6b4; margin-top:10px;">按名称、用途或分类搜索</div>
+                </div>
+                <div>
+                  <div class="terminal">
+                    <div style="border-bottom:1px solid #233833; padding-bottom:6px; margin-bottom:8px; display:flex; justify-content:space-between;">
+                      <span>● ● ●</span>
+                      <span>cliary — local workspace</span>
+                      <span>⌘</span>
+                    </div>
+                    <p style="margin:4px 0;"><span style="color:#79d3a3;">$</span> cliary search “disk usage”</p>
+                    <p style="margin:4px 0; color:#e0eee8;"><span style="color:#79d3a3;">✓</span> ncdu <span style="float:right; color:#738d84;">interactive disk usage</span></p>
+                    <p style="margin:4px 0; color:#e0eee8;"><span style="color:#79d3a3;">✓</span> gdu <span style="float:right; color:#738d84;">fast disk analyzer</span></p>
+                    <p style="margin:4px 0;"><span style="color:#79d3a3;">$</span> <span style="display:inline-block; width:6px; height:10px; background:#a4ddc1;"></span></p>
+                  </div>
+                </div>
+              </section>
+
+              <section class="metric-grid">
+                <div class="metric-card">
+                  <span style="font-size:16px; color:#22876d;">▤</span>
+                  <strong>42</strong>
+                  <span>已安装工具</span>
+                </div>
+                <div class="metric-card">
+                  <span style="font-size:16px; color:#9b6a85;">♡</span>
+                  <strong>15</strong>
+                  <span>我的收藏</span>
+                </div>
+                <div class="metric-card">
+                  <span style="font-size:16px; color:#9b7849;">▦</span>
+                  <strong>186</strong>
+                  <span>目录工具</span>
+                </div>
+                <div class="metric-card">
+                  <span style="font-size:16px; color:#586fa2;">◷</span>
+                  <strong>1,280</strong>
+                  <span>近 30 天使用次数</span>
+                </div>
+              </section>
+
+              <div class="dashboard-grid">
+                <div class="panel">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                    <div><span style="font-size:9px; color:#1b9d79; font-weight:800;">你的使用情况</span><h2 style="font-size:16px; margin:4px 0 0;">最常使用的工具</h2></div>
+                    <span style="font-size:11px; color:#178568; font-weight:700;">查看统计 ↗</span>
+                  </div>
+                  <div class="rank-row"><span style="color:#a0b1a5; width:18px;">01</span><strong style="width:80px;">git</strong><div class="rank-track"><span style="width:95%;"></span></div><strong>412</strong></div>
+                  <div class="rank-row"><span style="color:#a0b1a5; width:18px;">02</span><strong style="width:80px;">cargo</strong><div class="rank-track"><span style="width:78%;"></span></div><strong>338</strong></div>
+                  <div class="rank-row"><span style="color:#a0b1a5; width:18px;">03</span><strong style="width:80px;">ripgrep</strong><div class="rank-track"><span style="width:62%;"></span></div><strong>269</strong></div>
+                  <div class="rank-row"><span style="color:#a0b1a5; width:18px;">04</span><strong style="width:80px;">ncdu</strong><div class="rank-track"><span style="width:45%;"></span></div><strong>195</strong></div>
+                </div>
+
+                <div class="panel">
+                  <div style="display:flex; justify-content:space-between; margin-bottom:12px;">
+                    <div><span style="font-size:9px; color:#1b9d79; font-weight:800;">继续上次探索</span><h2 style="font-size:16px; margin:4px 0 0;">最近使用</h2></div>
+                    <span style="font-size:11px; color:#178568; font-weight:700;">↗</span>
+                  </div>
+                  <div class="rank-row"><span style="width:24px; height:24px; background:#eaf5ec; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; color:#188264; font-weight:700;">N</span><span>ncdu</span><span style="margin-left:auto; color:#a8c2af;">↗</span></div>
+                  <div class="rank-row"><span style="width:24px; height:24px; background:#eaf5ec; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; color:#188264; font-weight:700;">G</span><span>gdu</span><span style="margin-left:auto; color:#a8c2af;">↗</span></div>
+                  <div class="rank-row"><span style="width:24px; height:24px; background:#eaf5ec; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; color:#188264; font-weight:700;">B</span><span>bat</span><span style="margin-left:auto; color:#a8c2af;">↗</span></div>
+                </div>
+              </div>
+            </main>
+
+            <!-- Tool Detail View Before -->
+            <main id="before-page-tool" style="display:none;">
+              <h1 style="font-size:26px; margin-bottom:4px;">ncdu</h1>
+              <p style="color:#83958b; font-size:13px; margin-bottom:12px;">NCurses 磁盘用量分析工具，支持快速交互式扫描与大文件排查。</p>
+              <div style="display:flex; gap:6px; margin-bottom:16px;">
+                <span style="background:#e9f4ed; color:#2b7962; padding:4px 8px; border-radius:12px; font-size:10px; font-weight:700;">✓ 已安装</span>
+                <span style="background:#e9f4ed; color:#2b7962; padding:4px 8px; border-radius:12px; font-size:10px; font-weight:700;">系统监控</span>
+                <span style="background:#e9f4ed; color:#2b7962; padding:4px 8px; border-radius:12px; font-size:10px; font-weight:700;">磁盘空间</span>
+              </div>
+              <p style="font-size:12px; color:#5c7066;">版本: 1.18.0 · 来源: homebrew</p>
+              <p style="font-size:12px;"><a href="#" style="color:#16836a;">主页: https://dev.yorhel.nl/ncdu</a></p>
+              
+              <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:20px 0;">
+                <div style="background:#fff; border:1px solid #e5ebe6; padding:12px; border-radius:8px;"><strong>195</strong><br><span style="font-size:11px; color:#8fa096;">次数</span></div>
+                <div style="background:#fff; border:1px solid #e5ebe6; padding:12px; border-radius:8px;"><strong>48</strong><br><span style="font-size:11px; color:#8fa096;">活跃天数</span></div>
+                <div style="background:#fff; border:1px solid #e5ebe6; padding:12px; border-radius:8px;"><strong>2024-02-12</strong><br><span style="font-size:11px; color:#8fa096;">首次使用</span></div>
+                <div style="background:#fff; border:1px solid #e5ebe6; padding:12px; border-radius:8px;"><strong>今天</strong><br><span style="font-size:11px; color:#8fa096;">最近使用</span></div>
+              </div>
+
+              <h2 style="font-size:16px; margin:24px 0 10px;">安装方式</h2>
+              <div style="background:#fff; border:1px solid #e5ebe6; border-radius:8px; padding:10px; margin-bottom:14px; font-size:12px;">
+                <strong>brew</strong>: <code style="background:#f4f7f5; padding:2px 6px; border-radius:4px;">brew install ncdu</code>
+              </div>
+
+              <h2 style="font-size:16px; margin:24px 0 10px;">常用命令</h2>
+              <div style="background:#fff; border:1px solid #e5ebe6; border-radius:8px; padding:10px; margin-bottom:14px; font-size:12px;">
+                <code style="display:block; padding:4px 0;">ncdu -x /</code>
+                <code style="display:block; padding:4px 0; border-top:1px solid #f0f3f1;">ncdu --color dark -q</code>
+              </div>
+
+              <h2 style="font-size:16px; margin:24px 0 10px;">我的工具架</h2>
+              <button style="background:#1b9478; color:#fff; border:0; padding:8px 14px; border-radius:6px; font-size:11px; cursor:pointer;">取消收藏</button>
+              <div style="margin-top:10px;">
+                <textarea style="width:100%; border:1px solid #dce7dd; border-radius:6px; padding:8px; font-size:12px;" rows="3">排查大型 node_modules 或 Docker 占用时神器。</textarea>
+                <button style="background:#1b9478; color:#fff; border:0; padding:6px 12px; border-radius:6px; font-size:11px; margin-top:6px; cursor:pointer;">保存备注</button>
+              </div>
+            </main>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         RIGHT PANE: AFTER (PROPOSED REDESIGN IMPLEMENTATION)
+         ==================================================================== -->
+    <div class="pane pane-after">
+      <div class="pane-label-badge">
+        <span>美化方案预览 (Proposed Redesign)</span>
+        <span style="font-weight: normal; font-size: 10px; color:#6ee7b7;">现代极客风 · 双主题 · 细腻微交互</span>
+      </div>
+      <div class="pane-content scope-after" id="afterScope">
+        <div class="neo-app-shell">
+
+          <!-- Redesigned Sidebar -->
+          <aside class="neo-sidebar">
+            <a class="neo-brand" href="#after">
+              <div class="neo-brand-mark">
+                <span>CL</span>
+              </div>
+              <div class="neo-brand-title">
+                CLIary
+                <small>YOUR TOOL COMPANION</small>
+              </div>
+            </a>
+
+            <div class="neo-nav-group-title">
+              工作空间 
+              <span class="upgrade-mark annot" title="改进点：规范化的间距与视觉分组，支持键盘焦点导航">1</span>
+            </div>
+            <nav class="neo-nav">
+              <a href="#after" class="neo-nav-item active">
+                <span class="neo-nav-icon">⌂</span>
+                <span>工作台概览</span>
+              </a>
+              <a href="#after" class="neo-nav-item">
+                <span class="neo-nav-icon">⌕</span>
+                <span>发现工具</span>
+                <span class="neo-nav-count">186</span>
+              </a>
+              <a href="#after" class="neo-nav-item">
+                <span class="neo-nav-icon">▤</span>
+                <span>已安装工具</span>
+                <span class="neo-nav-count">42</span>
+              </a>
+              <a href="#after" class="neo-nav-item">
+                <span class="neo-nav-icon">▦</span>
+                <span>分类目录</span>
+              </a>
+              <a href="#after" class="neo-nav-item">
+                <span class="neo-nav-icon">♡</span>
+                <span>我的收藏</span>
+                <span class="neo-nav-count">15</span>
+              </a>
+            </nav>
+
+            <div class="neo-nav-group-title" style="margin-top:14px;">分析与辅助</div>
+            <nav class="neo-nav">
+              <a href="#after" class="neo-nav-item">
+                <span class="neo-nav-icon">⇄</span>
+                <span>工具横向对比</span>
+              </a>
+              <a href="#after" class="neo-nav-item">
+                <span class="neo-nav-icon">◷</span>
+                <span>执行历史</span>
+              </a>
+              <a href="#after" class="neo-nav-item">
+                <span class="neo-nav-icon">▥</span>
+                <span>使用深度统计</span>
+              </a>
+            </nav>
+
+            <div class="neo-sidebar-footer">
+              <div class="neo-local-status">
+                <span class="pulse-dot"></span>
+                <div class="neo-local-text">
+                  <strong>本机工作空间已就绪</strong>
+                  <small>数据 100% 留存在本机</small>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Redesigned Workspace Area -->
+          <div class="neo-workspace">
+            <!-- Redesigned Topbar -->
+            <header class="neo-topbar">
+              <div class="neo-breadcrumbs">
+                <span style="color:var(--after-text-muted);">CLIARY</span>
+                <span class="sep">/</span>
+                <span class="crumb-current" id="after-breadcrumb">工作台概览</span>
+                <span class="upgrade-mark annot" title="改进点：吸顶毛玻璃导航条，集成快捷搜索键触发">2</span>
+              </div>
+
+              <div class="neo-topbar-actions">
+                <div class="neo-quick-search-trigger" onclick="alert('提示：在实际版本中，按快捷键 ⌘K 将即刻呼出全局命令面板。')">
+                  <span>⌕ 快捷搜索工具...</span>
+                  <span class="neo-kbd">⌘K</span>
+                </div>
+                <div style="font-size:12px; color:var(--after-text-muted); display:flex; align-items:center; gap:6px;">
+                  <span class="pulse-dot" style="width:6px; height:6px;"></span>
+                  <span>Local Mode</span>
+                </div>
+              </div>
+            </header>
+
+            <!-- Redesigned Home Overview -->
+            <main class="neo-main" id="after-page-home">
+              
+              <!-- Redesigned Hero Section -->
+              <section class="neo-hero">
+                <div style="position:relative; z-index:2;">
+                  <span class="neo-hero-badge">
+                    <span>✦</span> 发现 · 整理 · 记住
+                  </span>
+                  <h1>你的工具，<br><em>尽在掌握。</em></h1>
+                  <p>为常用的命令行工具安个家，也发现下一个趁手的好工具。让每次终端敲击都得心应手。</p>
+                  
+                  <div class="neo-command-search">
+                    <span style="color:var(--after-text-muted); font-size:18px; margin-right:8px;">⌕</span>
+                    <input placeholder="试试“磁盘空间”、“网络测速”或“ncdu”..." id="afterSearchInput">
+                    <button onclick="handleNeoSearch()">
+                      <span>开始探索</span>
+                      <span class="neo-kbd" style="background:rgba(255,255,255,0.2); border:none; color:#fff;">↵</span>
+                    </button>
+                  </div>
+                  <div style="font-size:11px; color:#8cb5a3; margin-top:12px; display:flex; gap:12px;">
+                    <span>热搜：<a href="#after" onclick="fillSearch('ncdu')" style="text-decoration:underline;">ncdu</a>, <a href="#after" onclick="fillSearch('ripgrep')" style="text-decoration:underline;">ripgrep</a>, <a href="#after" onclick="fillSearch('dust')" style="text-decoration:underline;">dust</a></span>
+                    <span class="upgrade-mark annot" title="改进点：搜索框支持热搜标签与直接回车触发，提升开发者直觉">3</span>
+                  </div>
+                </div>
+
+                <!-- Modern Terminal Mockup -->
+                <div class="neo-terminal-wrap">
+                  <div class="neo-terminal-window">
+                    <div class="neo-terminal-header">
+                      <div class="neo-traffic-lights">
+                        <span class="neo-dot-red"></span>
+                        <span class="neo-dot-yellow"></span>
+                        <span class="neo-dot-green"></span>
+                      </div>
+                      <div class="neo-terminal-title">zsh — cliary workspace</div>
+                      <div style="font-size:10px; color:#4e6b5f;">⌘1</div>
+                    </div>
+                    <div class="neo-terminal-body">
+                      <p style="margin:0 0 10px;">
+                        <span class="neo-t-prompt">❯</span>
+                        <span class="neo-t-cmd">cliary search</span> 
+                        <span class="neo-t-arg">"disk usage"</span>
+                      </p>
+                      <div class="neo-t-res" style="margin-bottom:6px;">
+                        <span><span style="color:#34d399;">●</span> ncdu <span style="font-size:10px; color:#789c8d;">v1.18.0</span></span>
+                        <span class="neo-t-desc">interactive disk usage</span>
+                      </div>
+                      <div class="neo-t-res" style="margin-bottom:10px;">
+                        <span><span style="color:#34d399;">●</span> gdu <span style="font-size:10px; color:#789c8d;">v5.25.0</span></span>
+                        <span class="neo-t-desc">fast parallel analyzer</span>
+                      </div>
+                      <p style="margin:0;">
+                        <span class="neo-t-prompt">❯</span> 
+                        <span class="neo-t-cursor"></span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Redesigned Metrics Grid -->
+              <section class="neo-metrics-grid">
+                <div class="neo-metric-card">
+                  <div class="neo-metric-header">
+                    <span class="neo-metric-icon neo-icon-green">▤</span>
+                    <span class="neo-metric-trend">已扫描 ✓</span>
+                  </div>
+                  <div class="neo-metric-value">42</div>
+                  <div class="neo-metric-label">已安装工具</div>
+                </div>
+
+                <div class="neo-metric-card">
+                  <div class="neo-metric-header">
+                    <span class="neo-metric-icon neo-icon-purple">♡</span>
+                    <span class="neo-metric-trend">+2 本周</span>
+                  </div>
+                  <div class="neo-metric-value">15</div>
+                  <div class="neo-metric-label">精选我的收藏</div>
+                </div>
+
+                <div class="neo-metric-card">
+                  <div class="neo-metric-header">
+                    <span class="neo-metric-icon neo-icon-amber">▦</span>
+                    <span class="neo-metric-trend">持续收录</span>
+                  </div>
+                  <div class="neo-metric-value">186</div>
+                  <div class="neo-metric-label">社区目录工具</div>
+                </div>
+
+                <div class="neo-metric-card">
+                  <div class="neo-metric-header">
+                    <span class="neo-metric-icon neo-icon-blue">◷</span>
+                    <span class="neo-metric-trend">↑ 18.4%</span>
+                  </div>
+                  <div class="neo-metric-value">1,280</div>
+                  <div class="neo-metric-label">近 30 天运行次数</div>
+                </div>
+              </section>
+
+              <!-- Redesigned Dashboard Grid -->
+              <div class="neo-dashboard-grid">
+                <!-- Panel 1: Frequent Tools -->
+                <div class="neo-panel">
+                  <div class="neo-panel-header">
+                    <div class="neo-panel-title-group">
+                      <span class="neo-panel-subtitle">高频活跃榜</span>
+                      <h2>最常使用的工具</h2>
+                    </div>
+                    <a href="#after" class="neo-panel-action">完整分析报告 →</a>
+                  </div>
+
+                  <div style="display:flex; flex-direction:column; gap:4px;">
+                    <div class="neo-rank-item">
+                      <span class="neo-rank-pos">01</span>
+                      <span class="neo-rank-name">git</span>
+                      <div class="neo-rank-bar-bg"><div class="neo-rank-bar-fill" style="width: 95%;"></div></div>
+                      <span class="neo-rank-count">412 次</span>
+                    </div>
+                    <div class="neo-rank-item">
+                      <span class="neo-rank-pos">02</span>
+                      <span class="neo-rank-name">cargo</span>
+                      <div class="neo-rank-bar-bg"><div class="neo-rank-bar-fill" style="width: 82%;"></div></div>
+                      <span class="neo-rank-count">338 次</span>
+                    </div>
+                    <div class="neo-rank-item">
+                      <span class="neo-rank-pos">03</span>
+                      <span class="neo-rank-name">ripgrep</span>
+                      <div class="neo-rank-bar-bg"><div class="neo-rank-bar-fill" style="width: 65%;"></div></div>
+                      <span class="neo-rank-count">269 次</span>
+                    </div>
+                    <div class="neo-rank-item">
+                      <span class="neo-rank-pos">04</span>
+                      <span class="neo-rank-name">ncdu</span>
+                      <div class="neo-rank-bar-bg"><div class="neo-rank-bar-fill" style="width: 48%;"></div></div>
+                      <span class="neo-rank-count">195 次</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Panel 2: Recent History -->
+                <div class="neo-panel">
+                  <div class="neo-panel-header">
+                    <div class="neo-panel-title-group">
+                      <span class="neo-panel-subtitle">即时记录</span>
+                      <h2>最近使用的工具</h2>
+                    </div>
+                    <a href="#after" class="neo-panel-action">历史明细 →</a>
+                  </div>
+
+                  <div style="display:flex; flex-direction:column; gap:6px;">
+                    <div class="neo-rank-item" style="cursor:pointer;" onclick="setPage('tool')">
+                      <span class="neo-metric-icon neo-icon-green" style="width:30px; height:30px; font-size:12px; font-weight:800; font-family:var(--after-font-mono);">N</span>
+                      <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:700; font-size:13px; font-family:var(--after-font-mono);">ncdu</span>
+                        <small style="color:var(--after-text-muted); font-size:10px;">交互式磁盘用量 · 12 分钟前</small>
+                      </div>
+                      <span style="margin-left:auto; color:var(--after-primary); font-size:12px;">查看详情 →</span>
+                    </div>
+
+                    <div class="neo-rank-item">
+                      <span class="neo-metric-icon neo-icon-blue" style="width:30px; height:30px; font-size:12px; font-weight:800; font-family:var(--after-font-mono);">G</span>
+                      <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:700; font-size:13px; font-family:var(--after-font-mono);">gdu</span>
+                        <small style="color:var(--after-text-muted); font-size:10px;">并行磁盘分析 · 2 小时前</small>
+                      </div>
+                      <span style="margin-left:auto; color:var(--after-text-muted); font-size:12px;">↗</span>
+                    </div>
+
+                    <div class="neo-rank-item">
+                      <span class="neo-metric-icon neo-icon-purple" style="width:30px; height:30px; font-size:12px; font-weight:800; font-family:var(--after-font-mono);">B</span>
+                      <div style="display:flex; flex-direction:column;">
+                        <span style="font-weight:700; font-size:13px; font-family:var(--after-font-mono);">bat</span>
+                        <small style="color:var(--after-text-muted); font-size:10px;">语法高亮查看器 · 昨天</small>
+                      </div>
+                      <span style="margin-left:auto; color:var(--after-text-muted); font-size:12px;">↗</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Categories Section -->
+              <section>
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+                  <div>
+                    <h2 style="font-size:18px; font-weight:800; margin:0 0 4px; color:var(--after-text);">按分类发现好工具</h2>
+                    <p style="margin:0; font-size:13px; color:var(--after-text-muted);">探索精选收录的现代 CLI 工具库</p>
+                  </div>
+                  <a href="#after" class="neo-panel-action">浏览全部 18+ 分类 →</a>
+                </div>
+
+                <div class="neo-category-grid">
+                  <div class="neo-cat-card">
+                    <div class="neo-cat-symbol" style="background:#ecfdf5; color:#059669;">⌘</div>
+                    <div class="neo-cat-meta">
+                      <strong>系统与监控 (System)</strong>
+                      <small>ncdu, btop, htop · 34 个工具</small>
+                    </div>
+                  </div>
+                  <div class="neo-cat-card">
+                    <div class="neo-cat-symbol" style="background:#f5f3ff; color:#7c3aed;">▧</div>
+                    <div class="neo-cat-meta">
+                      <strong>文本与搜索 (Text & Search)</strong>
+                      <small>ripgrep, fd, bat, fzf · 42 个工具</small>
+                    </div>
+                  </div>
+                  <div class="neo-cat-card">
+                    <div class="neo-cat-symbol" style="background:#eff6ff; color:#2563eb;">◈</div>
+                    <div class="neo-cat-meta">
+                      <strong>网络与传输 (Network)</strong>
+                      <small>curlie, httpie, dog · 28 个工具</small>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </main>
+
+            <!-- Redesigned Tool Detail View -->
+            <main class="neo-main" id="after-page-tool" style="display:none;">
+              
+              <!-- Back button -->
+              <div style="margin-bottom:16px;">
+                <button class="neo-btn neo-btn-outline" onclick="setPage('home')" style="font-size:12px; padding:6px 12px;">
+                  ← 返回概览列表
+                </button>
+              </div>
+
+              <!-- Tool Hero Card -->
+              <div class="neo-tool-hero">
+                <div class="neo-tool-top-row">
+                  <div class="neo-tool-identity">
+                    <div class="neo-tool-logo">nc</div>
+                    <div class="neo-tool-title">
+                      <div style="display:flex; align-items:center; gap:10px;">
+                        <h1>ncdu</h1>
+                        <span class="neo-badge" style="background:rgba(16,185,129,0.15); color:#10b981; border:none;">✓ 已在设备就绪</span>
+                        <span class="upgrade-mark annot" title="改进点：头部突出展示工具核心身份、版本与快捷操作">4</span>
+                      </div>
+                      <p class="neo-tool-desc">NCurses 磁盘用量分析工具，支持快速交互式扫描与大文件排查，是清理服务器与本地磁盘的利器。</p>
+                    </div>
+                  </div>
+
+                  <div class="neo-tool-actions">
+                    <button class="neo-btn neo-btn-outline" id="fav-btn" onclick="toggleFav()">
+                      <span id="fav-icon">❤️</span> <span id="fav-text">已收藏</span>
+                    </button>
+                    <button class="neo-btn neo-btn-primary" onclick="copyCommand('ncdu -x /')">
+                      <span>⚡ 复制运行命令</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="neo-tool-badges">
+                  <span class="neo-badge">🏷 系统监控</span>
+                  <span class="neo-badge">🏷 磁盘分析</span>
+                  <span class="neo-badge" style="background:var(--after-surface-sunken); color:var(--after-text-secondary); border-color:var(--after-border);">版本: v1.18.0</span>
+                  <span class="neo-badge" style="background:var(--after-surface-sunken); color:var(--after-text-secondary); border-color:var(--after-border);">包管理: Homebrew</span>
+                  <span class="neo-badge" style="background:var(--after-surface-sunken); color:var(--after-text-secondary); border-color:var(--after-border);">开源协议: MIT</span>
+                  <a href="https://dev.yorhel.nl/ncdu" target="_blank" class="neo-badge" style="color:var(--after-primary); text-decoration:underline;">官方主页 ↗</a>
+                </div>
+              </div>
+
+              <!-- Two Column Grid for Tool Detail Content -->
+              <div class="neo-detail-shell">
+                <!-- Left Main Column: Commands & Install -->
+                <div>
+                  <!-- Section: Install Instructions with Manager Tabs -->
+                  <div class="neo-panel" style="margin-bottom:20px;">
+                    <div class="neo-panel-header" style="margin-bottom:14px;">
+                      <div class="neo-panel-title-group">
+                        <span class="neo-panel-subtitle">快速上手</span>
+                        <h2>安装方式 (Install Methods)</h2>
+                      </div>
+                      <span class="upgrade-mark annot" title="改进点：一键复制命令，点击即可反馈 Copied 状态">5</span>
+                    </div>
+
+                    <div class="neo-code-block">
+                      <div>
+                        <span style="color:var(--after-text-muted); font-size:11px; margin-right:8px; font-weight:700;">brew</span>
+                        <code>brew install ncdu</code>
+                      </div>
+                      <button class="neo-copy-btn" onclick="copySnippet(this, 'brew install ncdu')">📋 复制</button>
+                    </div>
+
+                    <div class="neo-code-block">
+                      <div>
+                        <span style="color:var(--after-text-muted); font-size:11px; margin-right:8px; font-weight:700;">apt</span>
+                        <code>sudo apt-get install ncdu</code>
+                      </div>
+                      <button class="neo-copy-btn" onclick="copySnippet(this, 'sudo apt-get install ncdu')">📋 复制</button>
+                    </div>
+                  </div>
+
+                  <!-- Section: Common Usage Cheatsheet -->
+                  <div class="neo-panel">
+                    <div class="neo-panel-header" style="margin-bottom:14px;">
+                      <div class="neo-panel-title-group">
+                        <span class="neo-panel-subtitle">速查卡片</span>
+                        <h2>常用指令集 (Cheatsheet)</h2>
+                      </div>
+                    </div>
+
+                    <div class="neo-code-block">
+                      <div>
+                        <span style="color:#10b981; margin-right:6px;">$</span>
+                        <code>ncdu -x /</code>
+                        <div style="font-size:11px; color:var(--after-text-muted); font-family:var(--after-font-sans); margin-top:2px;">扫描根目录但排除挂载的其他文件系统 (安全推荐)</div>
+                      </div>
+                      <button class="neo-copy-btn" onclick="copySnippet(this, 'ncdu -x /')">📋 复制</button>
+                    </div>
+
+                    <div class="neo-code-block">
+                      <div>
+                        <span style="color:#10b981; margin-right:6px;">$</span>
+                        <code>ncdu --color dark -q</code>
+                        <div style="font-size:11px; color:var(--after-text-muted); font-family:var(--after-font-sans); margin-top:2px;">启用暗色配色方案与静音模式，扫描更加迅速</div>
+                      </div>
+                      <button class="neo-copy-btn" onclick="copySnippet(this, 'ncdu --color dark -q')">📋 复制</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right Side Column: Stats & User Shelf -->
+                <div>
+                  <!-- Usage Stats Card -->
+                  <div class="neo-panel" style="margin-bottom:20px;">
+                    <div class="neo-panel-header" style="margin-bottom:14px;">
+                      <div class="neo-panel-title-group">
+                        <span class="neo-panel-subtitle">设备统计</span>
+                        <h2>使用数据追踪</h2>
+                      </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                      <div style="background:var(--after-surface-sunken); padding:12px; border-radius:10px;">
+                        <span style="font-size:22px; font-weight:800; font-family:var(--after-font-mono); color:var(--after-text);">195</span>
+                        <div style="font-size:11px; color:var(--after-text-muted);">累计执行次数</div>
+                      </div>
+                      <div style="background:var(--after-surface-sunken); padding:12px; border-radius:10px;">
+                        <span style="font-size:22px; font-weight:800; font-family:var(--after-font-mono); color:var(--after-text);">48 天</span>
+                        <div style="font-size:11px; color:var(--after-text-muted);">使用跨越天数</div>
+                      </div>
+                    </div>
+
+                    <div style="font-size:12px; color:var(--after-text-secondary); line-height:1.7;">
+                      <div>• 首次使用：<strong>2024-02-12</strong></div>
+                      <div>• 最近运行：<strong>今天 14:15</strong></div>
+                    </div>
+                  </div>
+
+                  <!-- My Shelf & Personal Notes -->
+                  <div class="neo-panel">
+                    <div class="neo-panel-header" style="margin-bottom:10px;">
+                      <div class="neo-panel-title-group">
+                        <span class="neo-panel-subtitle">个人工具架</span>
+                        <h2>专属笔记与心得</h2>
+                      </div>
+                      <span class="upgrade-mark annot" title="改进点：原版直接将表单堆在底部，现收纳为沉浸式侧边卡片">6</span>
+                    </div>
+
+                    <textarea id="note-textarea" style="width:100%; border:1px solid var(--after-border); border-radius:8px; padding:10px; font-size:12px; background:var(--after-surface-sunken); color:var(--after-text); font-family:inherit; resize:vertical; outline:none; transition:border-color 0.2s;" rows="4">排查大型 node_modules 或 Docker 冗余镜像时必用。配合快捷键 d 可直接按提示清理冗余文件。</textarea>
+                    
+                    <button class="neo-btn neo-btn-primary" style="width:100%; justify-content:center; margin-top:8px;" onclick="saveNoteFeedback(this)">
+                      <span>保存个人笔记</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </main>
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Interactive Demo Scripts -->
+  <script>
+    // Toggle View Mode: split, after, before
+    function setMode(mode) {
+      const stage = document.getElementById('comparisonStage');
+      stage.className = 'comparison-stage view-' + mode;
+      
+      const buttons = document.querySelectorAll('.preview-header .seg-group:first-of-type .seg-btn');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+    }
+
+    // Toggle Page: home vs tool
+    function setPage(page) {
+      // Before pane
+      document.getElementById('before-page-home').style.display = page === 'home' ? 'block' : 'none';
+      document.getElementById('before-page-tool').style.display = page === 'tool' ? 'block' : 'none';
+
+      // After pane
+      document.getElementById('after-page-home').style.display = page === 'home' ? 'block' : 'none';
+      document.getElementById('after-page-tool').style.display = page === 'tool' ? 'block' : 'none';
+
+      // Update breadcrumb
+      document.getElementById('after-breadcrumb').innerText = page === 'home' ? '工作台概览' : '工具详情 (ncdu)';
+
+      // Update top button state
+      document.getElementById('btn-page-home').classList.toggle('active', page === 'home');
+      document.getElementById('btn-page-tool').classList.toggle('active', page === 'tool');
+    }
+
+    // Toggle Theme for Proposed Redesign
+    let isDark = false;
+    function toggleAfterTheme() {
+      isDark = !isDark;
+      const scope = document.getElementById('afterScope');
+      const icon = document.getElementById('theme-icon');
+      const text = document.getElementById('theme-text');
+      
+      if (isDark) {
+        scope.classList.add('theme-dark');
+        icon.innerText = '☀️';
+        text.innerText = '切换为浅色模式';
+      } else {
+        scope.classList.remove('theme-dark');
+        icon.innerText = '🌙';
+        text.innerText = '切换为深色模式';
+      }
+    }
+
+    // Toggle Annotation Markers
+    let showAnnotations = true;
+    function toggleAnnotations() {
+      showAnnotations = !showAnnotations;
+      const annots = document.querySelectorAll('.annot');
+      annots.forEach(a => a.style.display = showAnnotations ? 'inline-flex' : 'none');
+      document.getElementById('annot-toggle-text').innerText = showAnnotations ? '隐藏美化亮点标注' : '显示美化亮点标注';
+    }
+
+    // Copy snippet helper with animated feedback
+    function copySnippet(btn, text) {
+      navigator.clipboard.writeText(text).catch(() => {});
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '✓ 已复制!';
+      btn.style.color = '#10b981';
+      btn.style.borderColor = '#10b981';
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 1800);
+    }
+
+    function copyCommand(cmd) {
+      navigator.clipboard.writeText(cmd).catch(() => {});
+      alert('已复制执行命令: ' + cmd);
+    }
+
+    // Favorite button toggle
+    let isFav = true;
+    function toggleFav() {
+      isFav = !isFav;
+      document.getElementById('fav-icon').innerText = isFav ? '❤️' : '🤍';
+      document.getElementById('fav-text').innerText = isFav ? '已收藏' : '添加收藏';
+    }
+
+    // Save note feedback
+    function saveNoteFeedback(btn) {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✓ 笔记已保存至本地';
+      btn.style.background = '#059669';
+      setTimeout(() => {
+        btn.innerHTML = orig;
+        btn.style.background = '';
+      }, 1600);
+    }
+
+    // Search simulation
+    function fillSearch(kw) {
+      document.getElementById('afterSearchInput').value = kw;
+    }
+
+    function handleNeoSearch() {
+      const q = document.getElementById('afterSearchInput').value.trim();
+      if (!q) {
+        alert('请输入要搜索的命令行工具名称');
+        return;
+      }
+      if (q.toLowerCase().includes('ncdu') || q.includes('磁盘')) {
+        setPage('tool');
+      } else {
+        alert('模拟搜索: ' + q + ' · 已过滤 8 个匹配工具');
+      }
+    }
+  </script>
+</body>
+</html>

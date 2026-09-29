@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:cliary:catalog:tool:1",
+  "title": "CLIary Tool",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "executables", "description", "categories"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "name": {"type": "string", "minLength": 1},
+    "aliases": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "executables": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1, "uniqueItems": true},
+    "description": {"$ref": "#/$defs/localized"},
+    "summary": {"$ref": "#/$defs/localized"},
+    "keywords": {"$ref": "#/$defs/keywords"},
+    "categories": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+    "tags": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "homepage": {"type": "string", "format": "uri", "pattern": "^https?://"},
+    "repository": {"type": "string", "format": "uri", "pattern": "^https?://"},
+    "license": {"type": "string"},
+    "implementation_language": {"type": "string"},
+    "maintenance_status": {"enum": ["active", "limited", "unmaintained", "unknown"]},
+    "platforms": {"type": "array", "items": {"enum": ["linux", "macos"]}, "uniqueItems": true},
+    "features": {"type": "object", "additionalProperties": {"type": "boolean"}},
+    "install": {"type": "object", "additionalProperties": {"type": "object", "required": ["package"], "additionalProperties": false, "properties": {"package": {"type": "string", "minLength": 1}, "command": {"type": "string"}}}},
+    "similar": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "common_commands": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "localized": {"type": "object", "required": ["en"], "properties": {"en": {"type": "string", "minLength": 1}, "zh-CN": {"type": "string"}}, "additionalProperties": false},
+    "keywords": {"type": "object", "properties": {"en": {"type": "array", "items": {"type": "string"}}, "zh-CN": {"type": "array", "items": {"type": "string"}}}, "additionalProperties": false}
+  }
+}

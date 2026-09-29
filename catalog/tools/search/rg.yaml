@@ -1,0 +1,28 @@
+id: rg
+name: rg
+executables:
+- rg
+description:
+  en: Fast recursive search for text in files.
+  zh-CN: 快速搜索文件内容的工具。
+categories:
+- search
+tags:
+- files
+- fast
+- filter
+platforms:
+- linux
+- macos
+similar:
+- grep
+- ag
+aliases:
+- ripgrep
+install:
+  apt:
+    package: ripgrep
+    command: sudo apt install ripgrep
+  brew:
+    package: ripgrep
+    command: brew install ripgrep

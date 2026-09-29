@@ -1,0 +1,25 @@
+id: fd
+name: fd
+executables:
+- fd
+- fdfind
+description:
+  en: Find filesystem entries with a simple interface.
+  zh-CN: 快速查找文件和目录。
+categories:
+- search
+tags:
+- files
+- fast
+platforms:
+- linux
+- macos
+similar:
+- find
+install:
+  apt:
+    package: fd-find
+    command: sudo apt install fd-find
+  brew:
+    package: fd
+    command: brew install fd

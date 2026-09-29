@@ -1,0 +1,22 @@
+id: gpg
+name: gpg
+executables:
+- gpg
+description:
+  en: Encrypt and sign data with OpenPGP.
+  zh-CN: 使用 OpenPGP 加密和签名数据。
+categories:
+- security
+tags:
+- encryption
+platforms:
+- linux
+- macos
+similar: []
+install:
+  apt:
+    package: gnupg
+    command: sudo apt install gnupg
+  brew:
+    package: gnupg
+    command: brew install gnupg

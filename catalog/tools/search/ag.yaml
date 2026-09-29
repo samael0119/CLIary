@@ -1,0 +1,24 @@
+id: ag
+name: ag
+executables:
+- ag
+description:
+  en: Fast code search tool, The Silver Searcher.
+  zh-CN: 快速搜索代码文件的工具。
+categories:
+- search
+tags:
+- files
+- fast
+platforms:
+- linux
+- macos
+similar:
+- rg
+install:
+  apt:
+    package: silversearcher-ag
+    command: sudo apt install silversearcher-ag
+  brew:
+    package: the_silver_searcher
+    command: brew install the_silver_searcher

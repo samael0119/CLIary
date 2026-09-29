@@ -1,0 +1,20 @@
+id: k9s
+name: k9s
+executables:
+- k9s
+description:
+  en: Terminal interface for Kubernetes.
+  zh-CN: Kubernetes 终端管理界面。
+categories:
+- development
+tags:
+- container
+- tui
+platforms:
+- linux
+- macos
+similar: []
+install:
+  brew:
+    package: k9s
+    command: brew install k9s
