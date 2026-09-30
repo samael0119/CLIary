@@ -3,6 +3,7 @@ use anyhow::Result;
 use rusqlite::{OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap, HashSet};
+use std::ffi::OsString;
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -79,6 +80,14 @@ impl Cliary {
     }
 
     pub fn scan_installed(&self) -> Result<Vec<InstalledTool>> {
+        self.scan_paths(search_paths(), package_inventory())
+    }
+
+    fn scan_paths(
+        &self,
+        paths: Vec<PathBuf>,
+        packages: HashMap<(String, String), String>,
+    ) -> Result<Vec<InstalledTool>> {
         let mut known = HashMap::new();
         let mut methods = HashMap::new();
         for tool in self.all_tools()? {
@@ -87,9 +96,8 @@ impl Cliary {
             }
             methods.insert(tool.id, tool.install);
         }
-        let packages = package_inventory();
         let mut entries = BTreeMap::new();
-        for directory in search_paths() {
+        for directory in paths {
             if let Ok(items) = fs::read_dir(&directory) {
                 for item in items.flatten() {
                     let path = item.path();
@@ -155,20 +163,45 @@ impl Cliary {
 }
 
 fn search_paths() -> Vec<PathBuf> {
+    search_paths_from(|name| std::env::var_os(name), dirs::home_dir())
+}
+
+// Inject environment values so discovery can be tested without changing process globals.
+fn search_paths_from(
+    mut env: impl FnMut(&str) -> Option<OsString>,
+    home: Option<PathBuf>,
+) -> Vec<PathBuf> {
     let mut result = Vec::new();
     let mut seen = HashSet::new();
-    let mut raw: Vec<PathBuf> =
-        std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default()).collect();
+    let mut raw: Vec<PathBuf> = std::env::split_paths(&env("PATH").unwrap_or_default()).collect();
+    // Keep PATH first: its first executable remains the selected copy when names collide.
+    for name in ["JAVA_HOME", "GOROOT"] {
+        if let Some(root) = env(name).filter(|value| !value.is_empty()) {
+            raw.push(PathBuf::from(root).join("bin"));
+        }
+    }
+    if let Some(bin) = env("GOBIN").filter(|value| !value.is_empty()) {
+        raw.push(PathBuf::from(bin));
+    }
+    if let Some(roots) = env("GOPATH").filter(|value| !value.is_empty()) {
+        raw.extend(
+            std::env::split_paths(&roots)
+                .filter(|path| !path.as_os_str().is_empty())
+                .map(|path| path.join("bin")),
+        );
+    } else if let Some(home) = &home {
+        raw.push(home.join("go/bin"));
+    }
     raw.extend([
         PathBuf::from("/usr/bin"),
         PathBuf::from("/usr/local/bin"),
         PathBuf::from("/opt/homebrew/bin"),
     ]);
-    if let Some(home) = dirs::home_dir() {
+    if let Some(home) = home {
         raw.extend([home.join(".local/bin"), home.join(".cargo/bin")]);
     }
     for path in raw {
-        if seen.insert(path.clone()) {
+        if !path.as_os_str().is_empty() && seen.insert(path.clone()) {
             result.push(path);
         }
     }
@@ -300,5 +333,130 @@ fn command(program: &str, args: &[&str]) -> Option<String> {
         String::from_utf8(output).ok()
     } else {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Paths;
+
+    fn paths_with(vars: &[(&str, OsString)], home: Option<PathBuf>) -> Vec<PathBuf> {
+        search_paths_from(
+            |name| {
+                vars.iter()
+                    .find(|(key, _)| *key == name)
+                    .map(|(_, v)| v.clone())
+            },
+            home,
+        )
+    }
+
+    #[test]
+    fn environment_paths_preserve_path_precedence_and_remove_duplicates() {
+        let path = std::env::join_paths(["/sdk/jdk/bin", "/custom/bin", "/sdk/jdk/bin"]).unwrap();
+        let gopath = std::env::join_paths(["/work/go-one", "/work/go-two"]).unwrap();
+        let paths = paths_with(
+            &[
+                ("PATH", path),
+                ("JAVA_HOME", "/sdk/jdk".into()),
+                ("GOROOT", "/sdk/go".into()),
+                ("GOBIN", "/go-tools".into()),
+                ("GOPATH", gopath),
+            ],
+            None,
+        );
+        assert_eq!(
+            &paths[..6],
+            &[
+                PathBuf::from("/sdk/jdk/bin"),
+                PathBuf::from("/custom/bin"),
+                PathBuf::from("/sdk/go/bin"),
+                PathBuf::from("/go-tools"),
+                PathBuf::from("/work/go-one/bin"),
+                PathBuf::from("/work/go-two/bin"),
+            ]
+        );
+    }
+
+    #[test]
+    fn empty_environment_values_do_not_scan_working_directory() {
+        let paths = paths_with(
+            &[
+                ("PATH", "".into()),
+                ("JAVA_HOME", "".into()),
+                ("GOROOT", "".into()),
+                ("GOBIN", "".into()),
+                ("GOPATH", "".into()),
+            ],
+            Some("/user".into()),
+        );
+        assert!(paths.contains(&PathBuf::from("/user/go/bin")));
+        assert!(!paths.contains(&PathBuf::from("bin")));
+        assert!(!paths.iter().any(|path| path.as_os_str().is_empty()));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn scan_finds_environment_tools_without_executing_them() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let make_bin = |directory: &str, executable: &str, executable_permission: bool| {
+            let directory = temp.path().join(directory);
+            fs::create_dir_all(&directory).unwrap();
+            let path = directory.join(executable);
+            // Not runnable content: discovery must inspect metadata, not invoke the tool.
+            fs::write(&path, "this is not an executable program").unwrap();
+            fs::set_permissions(
+                &path,
+                fs::Permissions::from_mode(if executable_permission { 0o755 } else { 0o644 }),
+            )
+            .unwrap();
+            path
+        };
+        let path_copy = make_bin("path-bin", "ncdu", true);
+        make_bin("java sdk/bin", "ncdu", true);
+        let java = make_bin("java sdk/bin", "fixture-java", true);
+        let go = make_bin("go-root/bin", "fixture-go", true);
+        let gobin = make_bin("go-tools", "fixture-gobin", true);
+        let gopath = make_bin("go-work/bin", "fixture-gopath", true);
+        make_bin("java sdk/bin", "not-executable", false);
+        let paths = paths_with(
+            &[
+                ("PATH", path_copy.parent().unwrap().as_os_str().into()),
+                ("JAVA_HOME", temp.path().join("java sdk").into_os_string()),
+                ("GOROOT", temp.path().join("go-root").into_os_string()),
+                ("GOBIN", temp.path().join("go-tools").into_os_string()),
+                ("GOPATH", temp.path().join("go-work").into_os_string()),
+            ],
+            None,
+        );
+        // Restrict this integration test to its fixture directories, excluding host defaults.
+        let paths = paths
+            .into_iter()
+            .filter(|p| p.starts_with(temp.path()))
+            .collect();
+        let core = Cliary::at(Paths::new(
+            temp.path().join("config"),
+            temp.path().join("data"),
+            temp.path().join("cache"),
+        ))
+        .unwrap();
+        let entries = core.scan_paths(paths, HashMap::new()).unwrap();
+        assert_eq!(entries.len(), 5);
+        for path in [&path_copy, &java, &go, &gobin, &gopath] {
+            assert!(
+                entries
+                    .iter()
+                    .any(|entry| entry.path == path.to_string_lossy())
+            );
+        }
+        let ncdu = entries
+            .iter()
+            .find(|entry| entry.executable == "ncdu")
+            .unwrap();
+        assert_eq!(ncdu.tool_id.as_deref(), Some("ncdu"));
+        assert!(core.has_scanned().unwrap());
+        assert_eq!(core.installed().unwrap().len(), 5);
     }
 }

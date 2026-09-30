@@ -22,6 +22,8 @@ target/release/cliary web
 
 If you skip scanning, installation status remains **Not scanned** until you run `cliary scan`.
 
+Scanning checks `PATH` first, then `$JAVA_HOME/bin`, `$GOROOT/bin`, `GOBIN`, each `$GOPATH/bin` (or `~/go/bin` when `GOPATH` is unset), and common system/user binary directories. The first executable with a given name wins, so `PATH` takes precedence. Use the standard variable `GOROOT`, rather than `GO_ROOT`. Only executable files are recorded; missing directories are skipped and discovered programs are not run. After changing these exported environment variables or installing new tools, run `cliary scan` again in a terminal that has those values.
+
 Shell capture can be enabled or removed later:
 
 ```sh
