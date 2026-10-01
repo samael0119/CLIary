@@ -367,8 +367,10 @@ dependencies = [
  "cliary-core",
  "hex",
  "rand",
+ "rusqlite",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
 ]
 

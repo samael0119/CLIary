@@ -1249,6 +1249,27 @@ p { line-height: 1.6; color: var(--muted); }
 }
 
 /* Empty States */
+.usage-guide { max-width: 920px; }
+.usage-guide h2 { margin: 0 0 12px; }
+.usage-guide p { max-width: 72ch; line-height: 1.65; margin: 0 0 16px; }
+.usage-steps { padding-left: 24px; margin: 28px 0; }
+.usage-steps li { padding-left: 8px; margin-bottom: 24px; }
+.usage-steps strong { display: block; margin-bottom: 6px; }
+.usage-guide pre {
+  background: var(--surface-sunken);
+  color: var(--ink);
+  padding: 14px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+  line-height: 1.8;
+}
+.usage-guide summary { cursor: pointer; color: var(--ink); padding: 6px 0; }
+.usage-guide summary:focus-visible { outline: 2px solid var(--green); outline-offset: 4px; }
+.usage-guide .usage-privacy { margin-top: 20px; font-size: 13px; }
+.usage-help { border-top: 1px solid var(--line); padding-top: 14px; }
+.usage-help p { margin-top: 12px; }
+
 .empty-inline, .empty-search {
   display: flex;
   flex-direction: column;
