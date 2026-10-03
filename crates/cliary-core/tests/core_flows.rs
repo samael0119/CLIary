@@ -81,3 +81,44 @@ fn catalog_replacement_preserves_user_data() {
     assert_eq!(detail.note.as_deref(), Some("use on servers"));
     assert_eq!(detail.run_count, 1);
 }
+
+#[test]
+fn comparison_keeps_catalog_evidence_and_missing_features() {
+    let (_root, core) = app();
+    let rows = core
+        .compare(&["ncdu".into(), "dust".into(), "du".into()])
+        .unwrap();
+    assert_eq!(
+        rows[0].description,
+        core.tool_detail("ncdu").unwrap().unwrap().tool.description
+    );
+    assert_eq!(rows[0].common_commands, vec!["ncdu /", "ncdu -x /"]);
+    assert_eq!(rows[0].features.get("tui"), Some(&true));
+    assert_eq!(rows[1].features.get("tui"), Some(&false));
+    assert_eq!(rows[2].features.get("tui"), None);
+    assert_eq!(rows[1].features.get("parallel_scan"), None);
+    let json = serde_json::to_value(&rows).unwrap();
+    assert_eq!(json[0]["common_commands"][0], "ncdu /");
+    assert_eq!(json[1]["features"]["tui"], false);
+    assert!(json[1]["features"].get("parallel_scan").is_none());
+}
+
+#[test]
+fn comparison_resolves_aliases_without_duplicate_columns() {
+    let (_root, core) = app();
+    let rows = core
+        .compare(&["rg".into(), "ripgrep".into(), "grep".into()])
+        .unwrap();
+    assert_eq!(
+        rows.iter().map(|r| r.id.as_str()).collect::<Vec<_>>(),
+        vec!["rg", "grep"]
+    );
+    assert!(core.compare(&["rg".into(), "ripgrep".into()]).is_err());
+    assert!(core.compare(&["ncdu".into(), "not-a-tool".into()]).is_err());
+    assert!(core.compare(&["ncdu".into()]).is_err());
+    assert!(core.compare(&vec!["ncdu".into(); 9]).is_err());
+    assert_eq!(
+        cliary_core::compare_feature_label("future-feature", "zh-CN"),
+        "future-feature"
+    );
+}

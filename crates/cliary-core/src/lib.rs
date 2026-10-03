@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 
-pub use catalog::{CompareRow, ToolDetail, ToolResult};
+pub use catalog::{CompareRow, ToolDetail, ToolResult, compare_feature_label};
 pub use cliary_catalog::{InstallMethod, LocalizedName, Manifest, Tool};
 pub use history::{HistorySummary, Stats, UsageEvent};
 pub use installed::InstalledTool;

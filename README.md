@@ -38,6 +38,14 @@ CLIary stores the executable name, timestamp, and a random local machine ID for 
 
 `--lang en` and `--lang zh-CN` temporarily override the language. `cliary config set language zh-CN` saves it. Search indexes both languages regardless of the UI language.
 
+## Compare tools
+
+Compare 2–8 distinct tools with `cliary compare ncdu gdu dust dua`, or enter comma-separated names on the Web **Compare** page. Aliases resolve to one Catalog entry, so `rg, ripgrep, grep` produces two tool columns. Unknown names must be corrected before comparing.
+
+Each recorded feature gets its own row: **Supported**, **Not supported**, or **Not recorded**. Missing data is never interpreted as a negative. The Web highlights rows with both explicit supported and unsupported values; a missing value alone does not establish a difference. Purpose descriptions and command examples come directly from the Catalog; examples are displayed without execution. Installation status reflects the saved scan, with **Not scanned** shown before scanning.
+
+The CLI lists longer package details, repository links and examples beneath the matrix. The Web table scrolls horizontally for larger comparisons and keeps dimension labels visible; focus the table to scroll with arrow keys. `--json` retains feature keys and booleans and adds the localized `description` map and `common_commands` array.
+
 ## Data and updates
 
 - Config: `~/.config/cliary/config.toml`
