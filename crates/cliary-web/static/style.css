@@ -1151,6 +1151,47 @@ p { line-height: 1.6; color: var(--muted); }
   font: 700 12px var(--mono);
 }
 
+/* Annual report within the existing desktop shell. */
+.wrapped-intro { display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; flex-wrap: wrap; }
+.wrapped-intro > div { max-width: 65ch; }
+.wrapped-year { margin: 0; }
+.wrapped-year label { display: block; font-weight: 650; margin-bottom: 6px; }
+.wrapped-year > div { display: flex; gap: 8px; }
+.wrapped-year input { width: 112px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); font-variant-numeric: tabular-nums; }
+.wrapped-year small { display: block; margin-top: 7px; color: var(--muted); }
+.wrapped-intro .wrapped-year .btn.btn-primary { background: #047857; transition: background-color 0.16s ease, transform 0.16s ease; }
+.wrapped-intro .wrapped-year .btn.btn-primary:hover { background: #065f46; }
+.wrapped-context h2 { margin: 0 0 4px; font-size: 22px; }
+.wrapped-context p, .wrapped-scope, .wrapped-range, .wrapped-caption { color: var(--muted); }
+.wrapped-context p { margin: 0 0 24px; }
+.wrapped-summary { display: flex; flex-wrap: wrap; gap: 18px 48px; border-block: 1px solid var(--line); padding: 18px 0; margin: 0; }
+.wrapped-summary > div { display: flex; align-items: baseline; gap: 12px; }
+.wrapped-summary dt { color: var(--muted); }
+.wrapped-summary dd { margin: 0; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.wrapped-scope { max-width: 75ch; font-size: 13px; margin: 16px 0; }
+.wrapped-range { font-size: 12px; font-variant-numeric: tabular-nums; margin-bottom: 24px; }
+.wrapped-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.wrapped-columns > :only-child { grid-column: 1 / -1; }
+.wrapped-columns h2, .wrapped-empty h2 { margin: 0 0 8px; font-size: 18px; }
+.wrapped-caption { font-size: 12px; margin: 0 0 18px; max-width: 65ch; }
+.wrapped-ranking { margin: 0; padding-left: 28px; }
+.wrapped-ranking li { padding: 12px 0 12px 8px; border-top: 1px solid var(--line-subtle); }
+.wrapped-ranking li::marker { color: var(--muted); font-variant-numeric: tabular-nums; }
+.wrapped-ranking code { display: inline-block; max-width: calc(100% - 100px); overflow-wrap: anywhere; vertical-align: top; }
+.wrapped-ranking li > span { float: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wrapped-months table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.wrapped-months th { text-align: left; font-weight: 500; padding: 8px 14px 8px 0; }
+.wrapped-months thead { color: var(--muted); font-size: 12px; }
+.wrapped-months thead th:last-child { text-align: right; }
+.wrapped-months tbody tr { border-top: 1px solid var(--line-subtle); }
+.wrapped-months tbody th { width: 100px; font-family: var(--mono); font-size: 12px; }
+.wrapped-months td { display: flex; align-items: center; gap: 14px; min-height: 35px; }
+.wrapped-track { flex: 1; background: var(--surface-sunken); height: 7px; border-radius: 4px; overflow: hidden; }
+.wrapped-track i { display: block; width: 100%; height: 100%; background: var(--green); transform-origin: left; }
+.wrapped-count { min-width: 5ch; text-align: right; font-size: 12px; }
+.wrapped-empty { margin-top: 24px; }
+.wrapped-empty p { max-width: 65ch; }
+
 /* Side-by-Side Comparison Matrix */
 .compare-matrix-wrap {
   overflow-x: auto;

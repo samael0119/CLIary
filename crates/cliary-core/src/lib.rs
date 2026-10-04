@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 
 pub use catalog::{CompareRow, ToolDetail, ToolResult};
 pub use cliary_catalog::{InstallMethod, LocalizedName, Manifest, Tool};
-pub use history::{HistorySummary, Stats, UsageEvent};
+pub use history::{CountItem, HistorySummary, Stats, UsageEvent, Wrapped};
 pub use installed::InstalledTool;
 pub use paths::Paths;
 
