@@ -815,6 +815,15 @@ p { line-height: 1.6; color: var(--muted); }
   flex-shrink: 0;
 }
 
+.favorite-missing { align-items: flex-start; flex-wrap: wrap; }
+.favorite-missing:hover { transform: none; border-color: var(--line); box-shadow: var(--shadow-sm); }
+.favorite-missing-copy { flex: 1 1 220px; min-width: 0; }
+.favorite-missing-copy strong { color: var(--ink); font-size: 14px; }
+.favorite-missing-copy code { display: block; color: var(--ink); margin-top: 6px; overflow-wrap: anywhere; }
+.favorite-missing-copy p { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 8px 0 0; }
+.favorite-missing .inline-form { margin: 0; flex-shrink: 0; }
+.favorite-missing .btn-outline:hover { color: var(--ink); }
+
 .status-pill {
   display: inline-flex;
   align-items: center;

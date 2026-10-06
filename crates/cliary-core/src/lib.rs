@@ -14,6 +14,7 @@ pub use cliary_catalog::{InstallMethod, LocalizedName, Manifest, Tool};
 pub use history::{HistorySummary, Stats, UsageEvent};
 pub use installed::InstalledTool;
 pub use paths::Paths;
+pub use user::FavoriteEntry;
 
 #[derive(Clone, Debug)]
 pub struct Cliary {

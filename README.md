@@ -36,6 +36,8 @@ CLIary stores the executable name, timestamp, and a random local machine ID for 
 
 `search`, `show`, `compare`, `installed`, `scan`, `categories`, `favorites`, `favorite`, `note`, `history`, `stats`, `sync`, `web`, `config`, and `setup shell` are available in V0.1. Read commands support `--json`, whose keys stay in English. `cliary note <tool>` opens `$EDITOR`; `--set` and `--delete` are available for scripts. `cliary stats --period 30d` and `cliary stats --year 2026` select periods.
 
+Favorites survive Catalog updates that remove tools. `cliary favorites` and the Web Favorites page show unavailable entries by their saved ID; remove them with `cliary favorite <id> --remove --exact-id` or the page's **Remove favorite** button. Exact ID removal is safe to retry even if a different tool later uses that ID as an alias; ordinary `--remove` still supports current names and aliases. Removing a bookmark keeps notes and usage history. If the same ID returns to the Catalog, its tool details appear again. In `favorites --json`, available entries keep their Tool object shape; unavailable entries contain only `id` and `catalog_available: false` (tool metadata is absent). Core callers needing every bookmark should use `favorite_entries()`; `favorites()` returns only entries with current metadata.
+
 `--lang en` and `--lang zh-CN` temporarily override the language. `cliary config set language zh-CN` saves it. Search indexes both languages regardless of the UI language.
 
 ## Data and updates
