@@ -1,5 +1,6 @@
 mod comparison;
 mod installed;
+mod wrapped;
 
 use askama::Template;
 use axum::{
@@ -54,6 +55,7 @@ fn page(app: &App, title: &str, body: String) -> WebResult {
         "Compare" => "compare",
         "History" => "history",
         "Statistics" => "stats",
+        "Wrapped" => "wrapped",
         _ => "tool",
     };
     let display_title = if lang == "zh-CN" {
@@ -66,6 +68,7 @@ fn page(app: &App, title: &str, body: String) -> WebResult {
             "compare" => "工具比较",
             "history" => "使用历史",
             "stats" => "统计分析",
+            "wrapped" => "年度报告",
             _ => title,
         }
     } else {
@@ -115,6 +118,7 @@ pub fn serve(core: Cliary) -> anyhow::Result<()> {
                 .route("/compare", get(comparison::compare))
                 .route("/history", get(history))
                 .route("/stats", get(stats))
+                .route("/wrapped", get(wrapped::wrapped))
                 .route("/language", post(set_language))
                 .route("/assets/style.css", get(css))
                 .route("/assets/htmx.min.js", get(htmx))

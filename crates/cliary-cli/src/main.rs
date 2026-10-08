@@ -66,6 +66,11 @@ enum Command {
         #[arg(long)]
         year: Option<i32>,
     },
+    /// Annual usage report; defaults to the current local year.
+    Wrapped {
+        #[arg(allow_hyphen_values = true)]
+        year: Option<i32>,
+    },
     Sync {
         #[arg(long)]
         url: Option<String>,
@@ -789,6 +794,73 @@ fn main() -> Result<()> {
                 }
 
                 println!("{}", theme.box_footer(76));
+                println!();
+            }
+        }
+        Command::Wrapped { year } => {
+            let report = core.wrapped(year)?;
+            if args.json {
+                out(json!(report))?;
+            } else {
+                println!("\n  {} — {}", theme.bold("CLIary Wrapped"), report.year);
+                if report.is_current_year {
+                    println!(
+                        "  {}",
+                        tr(&lang, "This year is still in progress.", "本年度尚未结束。")
+                    );
+                }
+                println!(
+                    "  {}: {} · {}: {} · {}: {}",
+                    tr(&lang, "Captured runs", "已记录调用"),
+                    report.total_runs,
+                    tr(&lang, "Active days", "活跃天数"),
+                    report.active_days,
+                    tr(&lang, "Tools used", "使用工具数"),
+                    report.tools_used
+                );
+                println!("  {}", theme.dim(tr(&lang,
+                    "Local calendar time. Captured invocations only; gaps do not mean inactivity.",
+                    "按本地日历统计，仅包含已采集的调用；记录空缺不代表没有使用。")));
+                if report.total_runs == 0 {
+                    println!(
+                        "\n  {}",
+                        tr(
+                            &lang,
+                            "No records for this year. Try another year. To capture future commands:",
+                            "该年暂无记录，可尝试其他年份。采集之后的命令："
+                        )
+                    );
+                    println!("  cliary setup shell --enable");
+                    println!(
+                        "  {}",
+                        tr(
+                            &lang,
+                            "Then open a new terminal. Earlier commands are not imported.",
+                            "然后打开新终端；不会导入之前的命令。"
+                        )
+                    );
+                } else {
+                    println!(
+                        "  {}: {} → {}",
+                        tr(&lang, "First / last recorded", "首条 / 末条记录"),
+                        report.first_recorded.as_deref().unwrap_or("—"),
+                        report.last_recorded.as_deref().unwrap_or("—")
+                    );
+                    println!(
+                        "\n  {}",
+                        theme.bold(tr(&lang, "Top tools (up to 10)", "常用工具（最多 10 项）"))
+                    );
+                    for (rank, item) in report.top_tools.iter().enumerate() {
+                        println!("  {:>2}. {}  {}", rank + 1, item.name, item.count);
+                    }
+                }
+                println!(
+                    "\n  {}",
+                    theme.bold(tr(&lang, "Captured runs by month", "每月已记录调用"))
+                );
+                for month in &report.monthly_activity {
+                    println!("  {}  {}", month.name, month.count);
+                }
                 println!();
             }
         }
