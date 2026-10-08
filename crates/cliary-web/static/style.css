@@ -377,6 +377,25 @@ p { line-height: 1.6; color: var(--muted); }
 }
 
 /* General Button Styles */
+.installed-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 12px; margin: 24px 0 12px; }
+.installed-filters label { display: flex; flex-direction: column; gap: 8px; font-weight: 600; font-size: 13px; min-width: 140px; flex: 1; }
+.installed-filters .installed-keyword { flex: 2; min-width: 220px; }
+.installed-filters input, .installed-filters select { width: 100%; min-width: 0; height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; }
+.installed-filters input:focus-visible, .installed-filters select:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.installed-filter-actions { display: flex; gap: 8px; flex-basis: 100%; }
+.installed-help { font-size: 12px; margin: 12px 0 20px; }
+.installed-results { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.installed-results p { margin: 0 auto 0 0; font-variant-numeric: tabular-nums; }
+.installed-table-wrap { overflow-x: auto; }
+.installed-table { width: 100%; border-collapse: collapse; background: var(--surface); }
+.installed-table th, .installed-table td { text-align: left; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.installed-table th { font-size: 12px; color: var(--muted); }
+.installed-table td { font-size: 13px; vertical-align: top; }
+.installed-table td:nth-child(2), .installed-table td:nth-child(3) { white-space: nowrap; }
+.installed-table .installed-executable { min-width: 160px; overflow-wrap: anywhere; }
+.installed-executable small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; }
+.installed-table .installed-directory { font-family: var(--mono); overflow-wrap: anywhere; max-width: 480px; }
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -815,6 +834,15 @@ p { line-height: 1.6; color: var(--muted); }
   flex-shrink: 0;
 }
 
+.favorite-missing { align-items: flex-start; flex-wrap: wrap; }
+.favorite-missing:hover { transform: none; border-color: var(--line); box-shadow: var(--shadow-sm); }
+.favorite-missing-copy { flex: 1 1 220px; min-width: 0; }
+.favorite-missing-copy strong { color: var(--ink); font-size: 14px; }
+.favorite-missing-copy code { display: block; color: var(--ink); margin-top: 6px; overflow-wrap: anywhere; }
+.favorite-missing-copy p { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 8px 0 0; }
+.favorite-missing .inline-form { margin: 0; flex-shrink: 0; }
+.favorite-missing .btn-outline:hover { color: var(--ink); }
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -1151,6 +1179,47 @@ p { line-height: 1.6; color: var(--muted); }
   font: 700 12px var(--mono);
 }
 
+/* Annual report within the existing desktop shell. */
+.wrapped-intro { display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; flex-wrap: wrap; }
+.wrapped-intro > div { max-width: 65ch; }
+.wrapped-year { margin: 0; }
+.wrapped-year label { display: block; font-weight: 650; margin-bottom: 6px; }
+.wrapped-year > div { display: flex; gap: 8px; }
+.wrapped-year input { width: 112px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); font-variant-numeric: tabular-nums; }
+.wrapped-year small { display: block; margin-top: 7px; color: var(--muted); }
+.wrapped-intro .wrapped-year .btn.btn-primary { background: #047857; transition: background-color 0.16s ease, transform 0.16s ease; }
+.wrapped-intro .wrapped-year .btn.btn-primary:hover { background: #065f46; }
+.wrapped-context h2 { margin: 0 0 4px; font-size: 22px; }
+.wrapped-context p, .wrapped-scope, .wrapped-range, .wrapped-caption { color: var(--muted); }
+.wrapped-context p { margin: 0 0 24px; }
+.wrapped-summary { display: flex; flex-wrap: wrap; gap: 18px 48px; border-block: 1px solid var(--line); padding: 18px 0; margin: 0; }
+.wrapped-summary > div { display: flex; align-items: baseline; gap: 12px; }
+.wrapped-summary dt { color: var(--muted); }
+.wrapped-summary dd { margin: 0; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.wrapped-scope { max-width: 75ch; font-size: 13px; margin: 16px 0; }
+.wrapped-range { font-size: 12px; font-variant-numeric: tabular-nums; margin-bottom: 24px; }
+.wrapped-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; align-items: start; }
+.wrapped-columns > :only-child { grid-column: 1 / -1; }
+.wrapped-columns h2, .wrapped-empty h2 { margin: 0 0 8px; font-size: 18px; }
+.wrapped-caption { font-size: 12px; margin: 0 0 18px; max-width: 65ch; }
+.wrapped-ranking { margin: 0; padding-left: 28px; }
+.wrapped-ranking li { padding: 12px 0 12px 8px; border-top: 1px solid var(--line-subtle); }
+.wrapped-ranking li::marker { color: var(--muted); font-variant-numeric: tabular-nums; }
+.wrapped-ranking code { display: inline-block; max-width: calc(100% - 100px); overflow-wrap: anywhere; vertical-align: top; }
+.wrapped-ranking li > span { float: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wrapped-months table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.wrapped-months th { text-align: left; font-weight: 500; padding: 8px 14px 8px 0; }
+.wrapped-months thead { color: var(--muted); font-size: 12px; }
+.wrapped-months thead th:last-child { text-align: right; }
+.wrapped-months tbody tr { border-top: 1px solid var(--line-subtle); }
+.wrapped-months tbody th { width: 100px; font-family: var(--mono); font-size: 12px; }
+.wrapped-months td { display: flex; align-items: center; gap: 14px; min-height: 35px; }
+.wrapped-track { flex: 1; background: var(--surface-sunken); height: 7px; border-radius: 4px; overflow: hidden; }
+.wrapped-track i { display: block; width: 100%; height: 100%; background: var(--green); transform-origin: left; }
+.wrapped-count { min-width: 5ch; text-align: right; font-size: 12px; }
+.wrapped-empty { margin-top: 24px; }
+.wrapped-empty p { max-width: 65ch; }
+
 /* Side-by-Side Comparison Matrix */
 .compare-matrix-wrap {
   overflow-x: auto;
@@ -1205,7 +1274,14 @@ p { line-height: 1.6; color: var(--muted); }
   color: var(--ink);
   font-size: 13px;
 }
-.compare-cell .dim { color: var(--muted); opacity: 0.7; }
+.compare-cell .dim { color: var(--muted); }
+.compare-help { font-size: 13px; color: var(--muted); max-width: 75ch; }
+.compare-matrix-wrap:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+.compare-table .compare-cell { min-width: 180px; max-width: 300px; overflow-wrap: anywhere; }
+.compare-table .compare-attr-th { position: sticky; left: 0; z-index: 1; text-align: left; }
+.compare-attr-th small { display: block; margin-top: 6px; font-size: 11px; font-weight: 500; letter-spacing: normal; text-transform: none; color: var(--ink); }
+.compare-feature-diff .compare-cell { background: var(--green-light); font-weight: 600; }
+.compare-table code.compare-command { display: block; margin-bottom: 6px; white-space: normal; }
 .compare-cell code {
   background: var(--surface-sunken);
   padding: 2px 6px;
@@ -1249,6 +1325,27 @@ p { line-height: 1.6; color: var(--muted); }
 }
 
 /* Empty States */
+.usage-guide { max-width: 920px; }
+.usage-guide h2 { margin: 0 0 12px; }
+.usage-guide p { max-width: 72ch; line-height: 1.65; margin: 0 0 16px; }
+.usage-steps { padding-left: 24px; margin: 28px 0; }
+.usage-steps li { padding-left: 8px; margin-bottom: 24px; }
+.usage-steps strong { display: block; margin-bottom: 6px; }
+.usage-guide pre {
+  background: var(--surface-sunken);
+  color: var(--ink);
+  padding: 14px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 12px 0;
+  line-height: 1.8;
+}
+.usage-guide summary { cursor: pointer; color: var(--ink); padding: 6px 0; }
+.usage-guide summary:focus-visible { outline: 2px solid var(--green); outline-offset: 4px; }
+.usage-guide .usage-privacy { margin-top: 20px; font-size: 13px; }
+.usage-help { border-top: 1px solid var(--line); padding-top: 14px; }
+.usage-help p { margin-top: 12px; }
+
 .empty-inline, .empty-search {
   display: flex;
   flex-direction: column;

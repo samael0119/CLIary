@@ -1,6 +1,6 @@
 use crate::Cliary;
 use anyhow::{Result, bail};
-use chrono::TimeZone;
+use chrono::{Datelike, TimeZone};
 use rusqlite::params;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -28,6 +28,27 @@ pub struct CountItem {
     pub count: u64,
 }
 
+/// A local-calendar year, based only on captured invocations (never arguments).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Wrapped {
+    pub year: i32,
+    pub is_current_year: bool,
+    pub total_runs: u64,
+    pub active_days: u64,
+    pub tools_used: u64,
+    pub first_recorded: Option<String>,
+    pub last_recorded: Option<String>,
+    pub top_tools: Vec<CountItem>,
+    /// Always January through December, including months with no records.
+    pub monthly_activity: Vec<CountItem>,
+}
+
+impl Wrapped {
+    pub fn supports_year(year: i32) -> bool {
+        (1..=9998).contains(&year)
+    }
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Stats {
     pub total_runs: u64,
@@ -44,6 +65,48 @@ pub struct Stats {
 }
 
 impl Cliary {
+    pub fn wrapped(&self, year: Option<i32>) -> Result<Wrapped> {
+        let current_year = chrono::Local::now().year();
+        let year = year.unwrap_or(current_year);
+        if !Wrapped::supports_year(year) {
+            bail!("year must be between 1 and 9998");
+        }
+        let start = local_year_start(year)?;
+        let end = local_year_start(year + 1)?;
+        let mut db = self.user_db()?;
+        // The shell recorder may append concurrently: every section shares one snapshot.
+        let tx = db.transaction()?;
+        let (total_runs, active_days, tools_used, first_recorded, last_recorded) = tx.query_row(
+            "SELECT COUNT(*), COUNT(DISTINCT date(timestamp,'unixepoch','localtime')), COUNT(DISTINCT COALESCE(tool_id,executable)), datetime(MIN(timestamp),'unixepoch','localtime'), datetime(MAX(timestamp),'unixepoch','localtime') FROM usage_events WHERE timestamp>=?1 AND timestamp<?2",
+            params![start, end],
+            |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
+        )?;
+        let top_tools = tx.prepare("SELECT COALESCE(tool_id,executable),COUNT(*) FROM usage_events WHERE timestamp>=?1 AND timestamp<?2 GROUP BY 1 ORDER BY 2 DESC,1 ASC LIMIT 10")?
+            .query_map(params![start, end], |row| Ok(CountItem { name: row.get(0)?, count: row.get(1)? }))?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        let months = tx.prepare("SELECT strftime('%m',timestamp,'unixepoch','localtime'),COUNT(*) FROM usage_events WHERE timestamp>=?1 AND timestamp<?2 GROUP BY 1")?
+            .query_map(params![start, end], |row| Ok((row.get::<_, String>(0)?, row.get::<_, u64>(1)?)))?
+            .collect::<rusqlite::Result<HashMap<_, _>>>()?;
+        let monthly_activity = (1..=12)
+            .map(|month| CountItem {
+                name: format!("{year:04}-{month:02}"),
+                count: months.get(&format!("{month:02}")).copied().unwrap_or(0),
+            })
+            .collect();
+        tx.commit()?;
+        Ok(Wrapped {
+            year,
+            is_current_year: year == current_year,
+            total_runs,
+            active_days,
+            tools_used,
+            first_recorded,
+            last_recorded,
+            top_tools,
+            monthly_activity,
+        })
+    }
+
     pub fn record_usage(&self, executable: &str) -> Result<()> {
         if executable
             .chars()
@@ -80,8 +143,10 @@ impl Cliary {
             None => (None, Vec::new()),
         };
         let (first_used, last_used, runs, active_days) = if tool.is_some() {
-            db.query_row("SELECT datetime(MIN(timestamp),'unixepoch','localtime'), datetime(MAX(timestamp),'unixepoch','localtime'), COUNT(*), COUNT(DISTINCT date(timestamp,'unixepoch','localtime')) FROM usage_events WHERE tool_id=?1 OR executable IN (SELECT value FROM json_each(?2))",
-                params![filter_id, serde_json::to_string(&executable_names)?], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)))?
+            // Current Catalog aliases supplement the saved identity; they must
+            // not hide a historical ID or an exact captured executable name.
+            db.query_row("SELECT datetime(MIN(timestamp),'unixepoch','localtime'), datetime(MAX(timestamp),'unixepoch','localtime'), COUNT(*), COUNT(DISTINCT date(timestamp,'unixepoch','localtime')) FROM usage_events WHERE tool_id=?1 OR tool_id=?3 OR executable=?3 OR executable IN (SELECT value FROM json_each(?2))",
+                params![filter_id, serde_json::to_string(&executable_names)?, tool], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)))?
         } else {
             db.query_row("SELECT datetime(MIN(timestamp),'unixepoch','localtime'), datetime(MAX(timestamp),'unixepoch','localtime'), COUNT(*), COUNT(DISTINCT date(timestamp,'unixepoch','localtime')) FROM usage_events", [],
                 |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)))?
@@ -147,12 +212,14 @@ impl Cliary {
         stats.tools_used = counts.len() as u64;
         let mut new_tools = HashSet::new();
         for id in counts.keys() {
+            // counts uses COALESCE(tool_id, executable). Always match that
+            // persisted key, even when the Catalog entry has changed or gone.
             let first: i64 = if let Some(tool) = self.get_tool(id)? {
-                db.query_row("SELECT MIN(timestamp) FROM usage_events WHERE tool_id=?1 OR executable IN (SELECT value FROM json_each(?2))",
+                db.query_row("SELECT MIN(timestamp) FROM usage_events WHERE tool_id=?1 OR executable=?1 OR executable IN (SELECT value FROM json_each(?2))",
                     params![id, serde_json::to_string(&tool.executables)?], |row| row.get(0))?
             } else {
                 db.query_row(
-                    "SELECT MIN(timestamp) FROM usage_events WHERE executable=?1",
+                    "SELECT MIN(timestamp) FROM usage_events WHERE tool_id=?1 OR executable=?1",
                     [id],
                     |row| row.get(0),
                 )?

@@ -2,6 +2,15 @@ use crate::{Cliary, Tool};
 use anyhow::{Result, bail};
 use rand::RngCore;
 use rusqlite::{OptionalExtension, params};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+
+/// A saved bookmark, including entries no longer present in the current Catalog.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct FavoriteEntry {
+    pub id: String,
+    pub tool: Option<Tool>,
+}
 
 impl Cliary {
     pub(crate) fn init_user(&self) -> Result<()> {
@@ -54,10 +63,19 @@ impl Cliary {
     }
 
     pub fn set_favorite(&self, tool: &str, favorite: bool) -> Result<()> {
-        let tool = self
-            .get_tool(tool)?
-            .ok_or_else(|| anyhow::anyhow!("unknown tool"))?;
         let db = self.user_db()?;
+        // Saved IDs take priority over current aliases. Removing a retired entry
+        // must not accidentally remove a different tool that acquired its name.
+        if !favorite && db.execute("DELETE FROM favorites WHERE tool_id=?1", [tool])? > 0 {
+            return Ok(());
+        }
+        let tool = self.get_tool(tool)?;
+        let Some(tool) = tool else {
+            if favorite {
+                bail!("unknown tool");
+            }
+            return Ok(());
+        };
         if favorite {
             db.execute(
                 "INSERT OR IGNORE INTO favorites VALUES (?1,?2)",
@@ -69,18 +87,45 @@ impl Cliary {
         Ok(())
     }
 
-    pub fn favorites(&self) -> Result<Vec<Tool>> {
+    /// Remove a persisted ID without resolving current aliases. Safe to retry,
+    /// even when a new Catalog entry uses the retired ID as an alias.
+    pub fn remove_favorite(&self, id: &str) -> Result<()> {
+        self.user_db()?
+            .execute("DELETE FROM favorites WHERE tool_id=?1", [id])?;
+        Ok(())
+    }
+
+    /// Return every saved bookmark. Metadata is resolved by exact Catalog ID;
+    /// aliases are for user input, not persisted identities.
+    pub fn favorite_entries(&self) -> Result<Vec<FavoriteEntry>> {
         let db = self.user_db()?;
-        let mut stmt = db.prepare("SELECT tool_id FROM favorites ORDER BY created_at DESC")?;
+        let mut stmt =
+            db.prepare("SELECT tool_id FROM favorites ORDER BY created_at DESC, tool_id ASC")?;
         let ids = stmt
             .query_map([], |row| row.get::<_, String>(0))?
             .collect::<rusqlite::Result<Vec<_>>>()?;
-        ids.into_iter()
-            .map(|id| {
-                self.get_tool(&id)?
-                    .ok_or_else(|| anyhow::anyhow!("catalog no longer contains favorite {id}"))
+        let mut tools: HashMap<_, _> = self
+            .all_tools()?
+            .into_iter()
+            .map(|tool| (tool.id.clone(), tool))
+            .collect();
+        Ok(ids
+            .into_iter()
+            .map(|id| FavoriteEntry {
+                tool: tools.remove(&id),
+                id,
             })
-            .collect()
+            .collect())
+    }
+
+    /// Compatibility API: only bookmarks with current Catalog metadata.
+    /// Use `favorite_entries` to display or manage all saved bookmarks.
+    pub fn favorites(&self) -> Result<Vec<Tool>> {
+        Ok(self
+            .favorite_entries()?
+            .into_iter()
+            .filter_map(|entry| entry.tool)
+            .collect())
     }
 
     pub fn save_note(&self, tool: &str, body: &str) -> Result<()> {
