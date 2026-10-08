@@ -1,3 +1,4 @@
+mod comparison;
 mod installed;
 
 use askama::Template;
@@ -29,11 +30,6 @@ struct Page<'a> {
     active: &'a str,
 }
 type WebResult = Result<Html<String>, (StatusCode, String)>;
-type CompareDimension<'a> = (
-    &'static str,
-    &'static str,
-    Box<dyn Fn(&cliary_core::CompareRow) -> String + 'a>,
-);
 fn error(e: anyhow::Error) -> (StatusCode, String) {
     (StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
 }
@@ -116,7 +112,7 @@ pub fn serve(core: Cliary) -> anyhow::Result<()> {
                 .route("/scan", post(scan))
                 .route("/categories", get(categories))
                 .route("/favorites", get(favorites))
-                .route("/compare", get(compare))
+                .route("/compare", get(comparison::compare))
                 .route("/history", get(history))
                 .route("/stats", get(stats))
                 .route("/language", post(set_language))
@@ -755,217 +751,6 @@ async fn favorites(State(app): State<App>) -> WebResult {
         body.push_str("</div>");
     }
     page(&app, "Favorites", body)
-}
-
-#[derive(Deserialize)]
-struct CompareQuery {
-    tools: Option<String>,
-}
-async fn compare(State(app): State<App>, Query(query): Query<CompareQuery>) -> WebResult {
-    let lang = app.core.locale(None).map_err(error)?;
-    let input = query.tools.unwrap_or_default();
-    let names = input
-        .split(',')
-        .map(str::trim)
-        .filter(|x| !x.is_empty())
-        .map(str::to_string)
-        .collect::<Vec<_>>();
-    let mut body = format!(
-        "<section class='page-intro'><span class='eyebrow'>{}</span><h1>{}</h1><p>{}</p></section><form class='search-form' action='/compare'><span class='search-glyph'>⇄</span><input name='tools' value='{}' placeholder='ncdu, gdu, dust' aria-label='Tools to compare'><button>{} ↗</button></form><div class='chips' style='margin-top:-8px; margin-bottom:20px;'><span style='color:var(--muted); font-size:11px; align-self:center;'>{}</span><a class='chip' href='/compare?tools=ncdu,gdu'>ncdu vs gdu</a><a class='chip' href='/compare?tools=bat,cat'>bat vs cat</a><a class='chip' href='/compare?tools=ripgrep,grep'>ripgrep vs grep</a><a class='chip' href='/compare?tools=eza,ls'>eza vs ls</a><a class='chip' href='/compare?tools=fd,find'>fd vs find</a></div>",
-        tr(&lang, "SIDE-BY-SIDE", "多维对比"),
-        tr(&lang, "Compare Tools", "工具横向对比"),
-        tr(
-            &lang,
-            "Evaluate commands side by side across features, platforms, and maintenance.",
-            "横向对比多个工具在特性、语言、安装方式与维护状态上的异同。"
-        ),
-        esc(&input),
-        tr(&lang, "Compare", "开始对比"),
-        tr(&lang, "Popular presets:", "推荐对比：")
-    );
-
-    if names.len() < 2 {
-        write!(
-            body,
-            "<div class='section-heading' style='margin-top:24px;'><div><span class='eyebrow'>{}</span><h2>{}</h2><p>{}</p></div></div><div class='compare-preset-card'><a class='compare-preset-item' href='/compare?tools=ncdu,gdu'><strong>ncdu vs gdu <span>↗</span></strong><span>{}</span></a><a class='compare-preset-item' href='/compare?tools=bat,cat'><strong>bat vs cat <span>↗</span></strong><span>{}</span></a><a class='compare-preset-item' href='/compare?tools=ripgrep,grep'><strong>ripgrep vs grep <span>↗</span></strong><span>{}</span></a><a class='compare-preset-item' href='/compare?tools=eza,ls'><strong>eza vs ls <span>↗</span></strong><span>{}</span></a><a class='compare-preset-item' href='/compare?tools=fd,find'><strong>fd vs find <span>↗</span></strong><span>{}</span></a></div>",
-            tr(&lang, "EXPLORE DIFFERENCES", "探索差异"),
-            tr(&lang, "Popular Comparisons", "常用对比组合"),
-            tr(&lang, "Select a preset above or type 2 or more tool names to compare.", "点击上方推荐组合或在输入框中输入 2 个及以上工具名称进行比对。"),
-            tr(&lang, "Disk usage: TUI vs speed", "磁盘分析：交互终端 vs 极速多线程"),
-            tr(&lang, "File viewer: syntax highlighting vs standard", "文本查看：代码高亮 vs 系统原生"),
-            tr(&lang, "Text search: blazing fast vs classic POSIX", "文本搜索：现代多线程 vs 传统工具"),
-            tr(&lang, "File list: modern glyphs & git vs classic", "目录浏览：现代化带图标 vs 传统列表"),
-            tr(&lang, "File find: intuitive syntax vs powerful posix", "查找文件：直观语法 vs 标准 find")
-        ).unwrap();
-    } else {
-        let rows = app.core.compare(&names).map_err(error)?;
-        if rows.len() < 2 {
-            write!(
-                body,
-                "<div class='empty-inline'><span class='empty-icon'>⇄</span><strong>{}</strong><p>{}</p></div>",
-                tr(&lang, "Tools not found in catalog", "未在工具库中找到足够的匹配工具"),
-                tr(&lang, "Please check tool spelling or try one of the recommended presets above.", "请检查工具名称拼写，或点击上方的推荐对比组合。")
-            ).unwrap();
-        } else {
-            body.push_str("<div class='compare-matrix-wrap'><table class='compare-table'><thead><tr><th class='compare-attr-th'>");
-            body.push_str(tr(&lang, "DIMENSION", "对比维度"));
-            body.push_str("</th>");
-            for r in &rows {
-                write!(
-                    body,
-                    "<th class='compare-tool-th'><div class='compare-tool-card'><span class='mini-avatar'>{}</span><a href='/tools/{}'><strong>{}</strong></a></div></th>",
-                    esc(&r.name.chars().next().unwrap_or('›').to_string()),
-                    esc(&r.id),
-                    esc(&r.name)
-                ).unwrap();
-            }
-            body.push_str("</tr></thead><tbody>");
-
-            let dimensions: Vec<CompareDimension<'_>> = vec![
-                (
-                    "Status",
-                    "运行状态",
-                    Box::new(|r| {
-                        if r.installed {
-                            format!(
-                                "<span class='status-pill installed-badge'><span class='local-dot'></span>{}</span>",
-                                tr(&lang, "Installed", "已就绪")
-                            )
-                        } else {
-                            format!(
-                                "<span class='dim'>{}</span>",
-                                tr(&lang, "Not installed", "未安装")
-                            )
-                        }
-                    }),
-                ),
-                (
-                    "Installed Version",
-                    "已装版本",
-                    Box::new(|r| {
-                        r.version
-                            .as_deref()
-                            .map(|v| format!("<code>{}</code>", esc(v)))
-                            .unwrap_or_else(|| "<span class='dim'>—</span>".into())
-                    }),
-                ),
-                (
-                    "Package Source",
-                    "安装来源",
-                    Box::new(|r| {
-                        r.source
-                            .as_deref()
-                            .map(|s| format!("<span class='badge-source'>{}</span>", esc(s)))
-                            .unwrap_or_else(|| "<span class='dim'>—</span>".into())
-                    }),
-                ),
-                (
-                    "Language",
-                    "开发语言",
-                    Box::new(|r| {
-                        r.implementation_language
-                            .as_deref()
-                            .map(esc)
-                            .unwrap_or_else(|| "<span class='dim'>—</span>".into())
-                    }),
-                ),
-                (
-                    "License",
-                    "开源协议",
-                    Box::new(|r| {
-                        r.license
-                            .as_deref()
-                            .map(|l| format!("<span class='badge-subtle'>{}</span>", esc(l)))
-                            .unwrap_or_else(|| "<span class='dim'>—</span>".into())
-                    }),
-                ),
-                (
-                    "Platforms",
-                    "支持平台",
-                    Box::new(|r| {
-                        if r.platforms.is_empty() {
-                            "<span class='dim'>—</span>".into()
-                        } else {
-                            esc(&r.platforms.join(", "))
-                        }
-                    }),
-                ),
-                (
-                    "Maintenance",
-                    "维护状态",
-                    Box::new(|r| {
-                        r.maintenance_status
-                            .as_deref()
-                            .map(esc)
-                            .unwrap_or_else(|| "<span class='dim'>unknown</span>".into())
-                    }),
-                ),
-                (
-                    "Key Features",
-                    "核心特性",
-                    Box::new(|r| {
-                        if r.features.is_empty() {
-                            "<span class='dim'>—</span>".into()
-                        } else {
-                            r.features
-                                .iter()
-                                .map(|(k, v)| format!("<code>{}={}</code>", esc(k), v))
-                                .collect::<Vec<_>>()
-                                .join(" ")
-                        }
-                    }),
-                ),
-                (
-                    "Install Methods",
-                    "支持的包管理器",
-                    Box::new(|r| {
-                        if r.install.is_empty() {
-                            "<span class='dim'>—</span>".into()
-                        } else {
-                            r.install
-                                .iter()
-                                .map(|(mgr, meth)| {
-                                    format!("<code>{}:{}</code>", esc(mgr), esc(&meth.package))
-                                })
-                                .collect::<Vec<_>>()
-                                .join(" ")
-                        }
-                    }),
-                ),
-                (
-                    "Repository",
-                    "代码仓库",
-                    Box::new(|r| {
-                        if let Some(repo) = &r.repository {
-                            format!(
-                                "<a class='detail-meta-link' href='{}' target='_blank' rel='noreferrer'>🐙 {} ↗</a>",
-                                esc(repo),
-                                tr(&lang, "Repository", "仓库链接")
-                            )
-                        } else {
-                            "<span class='dim'>—</span>".into()
-                        }
-                    }),
-                ),
-            ];
-
-            for (dim_en, dim_zh, extractor) in dimensions {
-                write!(
-                    body,
-                    "<tr><th class='compare-attr-th'>{}</th>",
-                    tr(&lang, dim_en, dim_zh)
-                )
-                .unwrap();
-                for r in &rows {
-                    write!(body, "<td class='compare-cell'>{}</td>", extractor(r)).unwrap();
-                }
-                body.push_str("</tr>");
-            }
-
-            body.push_str("</tbody></table></div>");
-        }
-    }
-    page(&app, "Compare", body)
 }
 
 fn usage_empty_state(lang: &str, route: &str, last_used: Option<&str>) -> String {

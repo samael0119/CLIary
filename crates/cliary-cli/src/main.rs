@@ -405,14 +405,17 @@ fn main() -> Result<()> {
                 );
                 println!("  {}", theme.dim(&"─".repeat(72)));
 
-                let dimensions: [CliCompareDimension<'_>; 10] = [
+                let scanned = core.has_scanned()?;
+                let dimensions: [CliCompareDimension<'_>; 7] = [
                     (
                         tr(&lang, "Installed", "安装状态"),
                         Box::new(|r| {
-                            if r.installed {
-                                theme.green("● installed")
+                            if !scanned {
+                                theme.dim(tr(&lang, "Not scanned", "尚未扫描"))
+                            } else if r.installed {
+                                theme.green(tr(&lang, "Installed", "已安装"))
                             } else {
-                                theme.dim("○ available")
+                                theme.dim(tr(&lang, "Not detected", "未检测到"))
                             }
                         }),
                     ),
@@ -441,30 +444,6 @@ fn main() -> Result<()> {
                         Box::new(|r| r.platforms.join(", ")),
                     ),
                     (
-                        tr(&lang, "Features", "核心特性"),
-                        Box::new(|r| {
-                            r.features
-                                .iter()
-                                .map(|(k, v)| format!("{k}={v}"))
-                                .collect::<Vec<_>>()
-                                .join(", ")
-                        }),
-                    ),
-                    (
-                        tr(&lang, "Install", "安装指令"),
-                        Box::new(|r| {
-                            r.install
-                                .iter()
-                                .map(|(m, p)| format!("{m}:{}", p.package))
-                                .collect::<Vec<_>>()
-                                .join(" | ")
-                        }),
-                    ),
-                    (
-                        tr(&lang, "Repository", "仓库"),
-                        Box::new(|r| r.repository.clone().unwrap_or_else(|| "—".into())),
-                    ),
-                    (
                         tr(&lang, "Maintenance", "维护状态"),
                         Box::new(|r| r.maintenance_status.clone().unwrap_or_else(|| "—".into())),
                     ),
@@ -484,6 +463,61 @@ fn main() -> Result<()> {
                         line.push_str(&format!("  {:<24}", val));
                     }
                     println!("{line}");
+                }
+                let features: std::collections::BTreeSet<_> =
+                    rows.iter().flat_map(|r| r.features.keys()).collect();
+                for key in features {
+                    let mut line = format!(
+                        "  {:<14}",
+                        theme.cyan(cliary_core::compare_feature_label(key, &lang))
+                    );
+                    for r in &rows {
+                        let value = match r.features.get(key) {
+                            Some(true) => tr(&lang, "Supported", "支持"),
+                            Some(false) => tr(&lang, "Not supported", "不支持"),
+                            None => tr(&lang, "Not recorded", "未记录"),
+                        };
+                        line.push_str(&format!("  {value:<24}"));
+                    }
+                    println!("{line}");
+                }
+                println!("\n  {}", theme.dim(tr(&lang,
+                    "Features are Catalog records; missing data is not a negative. Scan status reflects the saved scan.",
+                    "特性来自工具库；未记录不等于不支持。安装状态基于已保存扫描。")));
+                for row in &rows {
+                    println!("\n  {}", theme.bold(&row.name));
+                    let description = localized(&row.description, &lang);
+                    println!(
+                        "  {}",
+                        if description.is_empty() {
+                            tr(&lang, "Purpose not recorded.", "用途尚未记录。")
+                        } else {
+                            description
+                        }
+                    );
+                    for (manager, method) in &row.install {
+                        println!(
+                            "  {}: {manager}:{}",
+                            tr(&lang, "Package", "安装包"),
+                            method.package
+                        );
+                    }
+                    if let Some(repository) = &row.repository {
+                        println!("  {}: {repository}", tr(&lang, "Repository", "仓库"));
+                    }
+                    if !row.common_commands.is_empty() {
+                        println!(
+                            "  {}",
+                            theme.dim(tr(
+                                &lang,
+                                "Catalog command examples (not executed):",
+                                "工具库命令示例（不会执行）："
+                            ))
+                        );
+                        for command in &row.common_commands {
+                            println!("    {command}");
+                        }
+                    }
                 }
                 println!();
             }

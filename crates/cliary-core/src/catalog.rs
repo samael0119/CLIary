@@ -33,6 +33,10 @@ pub struct ToolDetail {
 pub struct CompareRow {
     pub id: String,
     pub name: String,
+    #[serde(default)]
+    pub description: std::collections::BTreeMap<String, String>,
+    #[serde(default)]
+    pub common_commands: Vec<String>,
     pub installed: bool,
     pub version: Option<String>,
     pub source: Option<String>,
@@ -43,6 +47,21 @@ pub struct CompareRow {
     pub features: std::collections::BTreeMap<String, bool>,
     pub install: std::collections::BTreeMap<String, cliary_catalog::InstallMethod>,
     pub repository: Option<String>,
+}
+
+/// Shared labels for known Catalog feature keys. New keys retain their stable ID.
+pub fn compare_feature_label<'a>(key: &'a str, lang: &str) -> &'a str {
+    match (key, lang == "zh-CN") {
+        ("tui", false) => "Terminal UI",
+        ("tui", true) => "终端界面",
+        ("interactive", false) => "Interactive",
+        ("interactive", true) => "交互操作",
+        ("delete_files", false) => "Delete files",
+        ("delete_files", true) => "删除文件",
+        ("parallel_scan", false) => "Parallel scan",
+        ("parallel_scan", true) => "并行扫描",
+        _ => key,
+    }
 }
 
 impl Cliary {
@@ -289,13 +308,19 @@ impl Cliary {
             bail!("compare requires 2 to 8 tools");
         }
         let mut rows = Vec::new();
+        let mut seen = std::collections::HashSet::new();
         for name in names {
             let detail = self
                 .tool_detail(name)?
                 .with_context(|| format!("unknown tool: {name}"))?;
+            if !seen.insert(detail.tool.id.clone()) {
+                continue;
+            }
             rows.push(CompareRow {
                 id: detail.tool.id,
                 name: detail.tool.name,
+                description: detail.tool.description,
+                common_commands: detail.tool.common_commands,
                 installed: detail.installed.is_some(),
                 version: detail.installed.as_ref().and_then(|x| x.version.clone()),
                 source: detail.installed.as_ref().and_then(|x| x.source.clone()),
@@ -307,6 +332,9 @@ impl Cliary {
                 install: detail.tool.install,
                 repository: detail.tool.repository,
             });
+        }
+        if rows.len() < 2 {
+            bail!("compare requires at least 2 distinct tools");
         }
         Ok(rows)
     }

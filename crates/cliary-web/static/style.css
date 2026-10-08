@@ -1224,7 +1224,14 @@ p { line-height: 1.6; color: var(--muted); }
   color: var(--ink);
   font-size: 13px;
 }
-.compare-cell .dim { color: var(--muted); opacity: 0.7; }
+.compare-cell .dim { color: var(--muted); }
+.compare-help { font-size: 13px; color: var(--muted); max-width: 75ch; }
+.compare-matrix-wrap:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+.compare-table .compare-cell { min-width: 180px; max-width: 300px; overflow-wrap: anywhere; }
+.compare-table .compare-attr-th { position: sticky; left: 0; z-index: 1; text-align: left; }
+.compare-attr-th small { display: block; margin-top: 6px; font-size: 11px; font-weight: 500; letter-spacing: normal; text-transform: none; color: var(--ink); }
+.compare-feature-diff .compare-cell { background: var(--green-light); font-weight: 600; }
+.compare-table code.compare-command { display: block; margin-bottom: 6px; white-space: normal; }
 .compare-cell code {
   background: var(--surface-sunken);
   padding: 2px 6px;
