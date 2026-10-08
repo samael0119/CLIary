@@ -366,3 +366,19 @@ fn resolved_live_names_merge_tools_keep_provenance_and_reject_command_bodies() {
         "gst"
     );
 }
+
+#[test]
+fn prepared_import_contains_only_the_previewed_snapshot_and_can_be_retried() {
+    let (root, core) = app();
+    let path = file(root.path(), ": 1704067200:0;git SECRET\n");
+    let plan = core
+        .prepare_history_import(&path, HistoryFormat::Zsh, None)
+        .unwrap();
+    assert_eq!(core.preview_history_import(&plan).unwrap().new_timed, 1);
+    std::fs::write(&path, ": 1704067201:0;jq CHANGED_AFTER_PREVIEW\n").unwrap();
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(core.apply_history_import(&plan).unwrap().new_timed, 1);
+    assert_eq!(core.history(Some("git")).unwrap().runs, 1);
+    assert_eq!(core.history(Some("jq")).unwrap().runs, 0);
+    assert_eq!(core.apply_history_import(&plan).unwrap().new_timed, 0);
+}

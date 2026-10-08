@@ -63,6 +63,12 @@ If records are still missing, check `cliary history` in the terminal and verify 
 
 ## Import existing Shell history / 导入旧历史
 
+The first interactive run offers an optional history guide after installed-tool scanning and future capture setup. Existing installations also get the import guide once, even if scanning is already complete. It lists common/custom Bash, Zsh and Fish history paths without reading contents, previews only after selection, and defaults to **no import**. You can process several Shell files, supply an optional alias snapshot, and see counts/date ranges before applying. Skips are remembered; incomplete input remains retryable. Non-interactive and JSON commands never open the guide.
+
+Run `cliary setup history` to reopen it at any time. The installer invokes this same guide when interactive; otherwise it prints the entry point. `install.sh --no-import-history` skips the guide, while `--no-history` skips both future capture and this guide. Reading/importing a historical file never enables future capture.
+
+首次交互运行会询问是否预览旧历史，再分别确认每份文件的导入；默认不导入。已有安装也会提示一次，跳过后可用 `cliary setup history` 重开。无日期记录只进入观察列表，不会被分配到某个年份；别名表仍须由日常 Shell 显式导出。
+
 ```sh
 cliary import-history --shell zsh --file "$HISTFILE"          # Preview only
 cliary import-history --shell zsh --file "$HISTFILE" --apply  # Explicit import

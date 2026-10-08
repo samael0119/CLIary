@@ -15,6 +15,9 @@ pub enum HistoryFormat {
     Fish,
 }
 impl HistoryFormat {
+    pub fn name(self) -> &'static str {
+        self.source()
+    }
     fn source(self) -> &'static str {
         match self {
             Self::Bash => "bash",
@@ -49,6 +52,7 @@ pub struct ImportReport {
     #[serde(default)]
     pub reclassified_records: u64,
 }
+#[derive(Clone)]
 struct Parsed {
     timed: BTreeMap<(String, i64), u64>,
     undated: BTreeMap<String, u64>,
@@ -56,8 +60,30 @@ struct Parsed {
     resolved: BTreeMap<String, String>,
     unexpanded: std::collections::BTreeSet<String>,
 }
+/// A fixed preview snapshot containing executable-level facts only, never raw commands.
+pub struct HistoryImportPlan {
+    parsed: Parsed,
+    format: HistoryFormat,
+}
 
 impl Cliary {
+    /// Independent from installed-tool scanning, so old installations also get this guide.
+    pub fn history_import_onboarding_pending(&self) -> Result<bool> {
+        Ok(self.user_db()?.query_row(
+            "SELECT NOT EXISTS(SELECT 1 FROM meta WHERE key='history_import_onboarding')",
+            [],
+            |row| row.get(0),
+        )?)
+    }
+
+    pub fn complete_history_import_onboarding(&self) -> Result<()> {
+        self.user_db()?.execute(
+            "INSERT INTO meta VALUES ('history_import_onboarding','done') ON CONFLICT(key) DO UPDATE SET value='done'",
+            [],
+        )?;
+        Ok(())
+    }
+
     /// Preview by default. Reads only the explicitly selected regular file, <=32 MiB.
     pub fn import_history(
         &self,
@@ -76,6 +102,16 @@ impl Cliary {
         apply: bool,
         aliases_file: Option<&Path>,
     ) -> Result<ImportReport> {
+        let plan = self.prepare_history_import(path, format, aliases_file)?;
+        self.run_history_import(&plan, apply)
+    }
+
+    pub fn prepare_history_import(
+        &self,
+        path: &Path,
+        format: HistoryFormat,
+        aliases_file: Option<&Path>,
+    ) -> Result<HistoryImportPlan> {
         let aliases = aliases_file
             .map(AliasSnapshot::read)
             .transpose()?
@@ -110,7 +146,23 @@ impl Cliary {
         }
         let text = std::str::from_utf8(&bytes)
             .context("history must be UTF-8; export a UTF-8 copy first")?;
-        let mut parsed = parse(text, format, &aliases);
+        Ok(HistoryImportPlan {
+            parsed: parse(text, format, &aliases),
+            format,
+        })
+    }
+
+    pub fn preview_history_import(&self, plan: &HistoryImportPlan) -> Result<ImportReport> {
+        self.run_history_import(plan, false)
+    }
+
+    pub fn apply_history_import(&self, plan: &HistoryImportPlan) -> Result<ImportReport> {
+        self.run_history_import(plan, true)
+    }
+
+    fn run_history_import(&self, plan: &HistoryImportPlan, apply: bool) -> Result<ImportReport> {
+        let mut parsed = plan.parsed.clone();
+        let format = plan.format;
         let mut db = self.user_db()?;
         let tx = db.transaction_with_behavior(if apply {
             rusqlite::TransactionBehavior::Immediate

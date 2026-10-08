@@ -1,6 +1,7 @@
 mod catalog;
 mod history;
 mod history_import;
+mod history_sources;
 mod installed;
 mod paths;
 mod shell_alias;
@@ -15,7 +16,8 @@ use serde::{Deserialize, Serialize};
 pub use catalog::{CompareRow, ToolDetail, ToolResult, compare_feature_label};
 pub use cliary_catalog::{InstallMethod, LocalizedName, Manifest, Tool};
 pub use history::{CountItem, HistorySummary, Stats, UsageEvent, Wrapped};
-pub use history_import::{HistoryFormat, ImportReport, UndatedTool};
+pub use history_import::{HistoryFormat, HistoryImportPlan, ImportReport, UndatedTool};
+pub use history_sources::{HistoryCandidate, history_candidates};
 pub use installed::InstalledTool;
 pub use paths::Paths;
 pub use shell_alias::AliasResolution;

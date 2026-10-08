@@ -1,3 +1,4 @@
+mod onboarding;
 mod shell;
 mod ui;
 
@@ -134,6 +135,8 @@ enum ConfigCommand {
 }
 #[derive(Subcommand)]
 enum SetupCommand {
+    /// Interactively preview and optionally import existing Bash/Zsh/Fish history.
+    History,
     Shell {
         #[arg(long)]
         shell: Option<String>,
@@ -151,6 +154,7 @@ enum InternalCommand {
         resolved_executable: Option<String>,
     },
     SkipScan,
+    SkipHistoryGuide,
 }
 
 fn main() -> Result<()> {
@@ -179,7 +183,16 @@ fn main() -> Result<()> {
         core.skip_initial_scan()?;
         return Ok(());
     }
+    if let Command::Internal {
+        command: InternalCommand::SkipHistoryGuide,
+    } = &args.command
+    {
+        core.complete_history_import_onboarding()?;
+        return Ok(());
+    }
     let lang = core.locale(args.lang.as_deref())?;
+    let interactive =
+        !args.json && std::io::stdin().is_terminal() && std::io::stderr().is_terminal();
     if !matches!(
         &args.command,
         Command::ImportHistory { .. }
@@ -188,17 +201,22 @@ fn main() -> Result<()> {
             | Command::Config { .. }
             | Command::Setup { .. }
     ) {
-        if core.initial_scan_pending()? && !args.json && std::io::stdin().is_terminal() {
+        if core.initial_scan_pending()? && interactive {
             first_run(&core, &lang)?;
-        } else if core.ensure_initial_scan()? && !args.json {
-            eprintln!(
-                "{}",
-                tr(
-                    &lang,
-                    "Initial installed-tool scan complete.",
-                    "已完成首次安装工具扫描。"
-                )
-            );
+        } else {
+            if core.ensure_initial_scan()? && !args.json {
+                eprintln!(
+                    "{}",
+                    tr(
+                        &lang,
+                        "Initial installed-tool scan complete.",
+                        "已完成首次安装工具扫描。"
+                    )
+                );
+            }
+            if interactive && core.history_import_onboarding_pending()? {
+                onboarding::offer_history_import(&core, &lang)?;
+            }
         }
     }
     let theme = ui::Theme::detect();
@@ -895,6 +913,9 @@ fn main() -> Result<()> {
             };
             let report =
                 core.import_history_with_aliases(&file, format, apply, aliases_file.as_deref())?;
+            if apply {
+                core.complete_history_import_onboarding()?;
+            }
             if args.json {
                 out(json!(report))?;
             } else {
@@ -1227,6 +1248,14 @@ fn main() -> Result<()> {
             }
         },
         Command::Setup { command } => match command {
+            SetupCommand::History => {
+                if !interactive {
+                    bail!(
+                        "setup history requires an interactive terminal; use import-history --shell SHELL --file PATH for scripts"
+                    );
+                }
+                onboarding::offer_history_import(&core, &lang)?;
+            }
             SetupCommand::Shell {
                 shell,
                 enable,
@@ -1261,8 +1290,8 @@ fn first_run(core: &Cliary, lang: &str) -> Result<()> {
         tr(lang, "Welcome to CLIary", "欢迎使用 CLIary"),
         tr(
             lang,
-            "Let's set up your local workspace. This takes about a minute.",
-            "我们先设置你的本地工作空间，大约需要一分钟。"
+            "Set up your local workspace. You can skip each step and return later.",
+            "设置你的本地工作空间。每一步都可跳过，稍后再设置。"
         )
     );
     if ask_yes_no(
@@ -1320,6 +1349,7 @@ fn first_run(core: &Cliary, lang: &str) -> Result<()> {
             );
         }
     }
+    onboarding::offer_history_import(core, lang)?;
     eprintln!(
         "\n{}\n",
         tr(
@@ -1334,7 +1364,9 @@ fn ask_yes_no(prompt: &str, default_yes: bool) -> Result<bool> {
     eprint!("{prompt}");
     std::io::stderr().flush()?;
     let mut answer = String::new();
-    std::io::stdin().read_line(&mut answer)?;
+    if std::io::stdin().read_line(&mut answer)? == 0 {
+        return Ok(false);
+    }
     let answer = answer.trim().to_ascii_lowercase();
     Ok(match answer.as_str() {
         "y" | "yes" => true,
