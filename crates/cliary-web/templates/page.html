@@ -100,6 +100,23 @@
         var btn = e.target.closest('button[data-copy]');
         if (btn) copySnippet(btn, btn.getAttribute('data-copy'));
       });
+      document.addEventListener('submit', function(e) {
+        if (!e.target.matches('form[data-history-import]')) return;
+        e.target.setAttribute('aria-busy', 'true');
+        var btn = e.target.querySelector('button[type="submit"], button:not([type])');
+        if (btn) {
+          btn.dataset.readyText = btn.textContent;
+          btn.textContent = '{% if lang == "zh-CN" %}正在处理…{% else %}Processing…{% endif %}';
+          btn.disabled = true;
+        }
+      });
+      window.addEventListener('pageshow', function() {
+        document.querySelectorAll('form[data-history-import][aria-busy="true"]').forEach(function(form) {
+          form.removeAttribute('aria-busy');
+          var btn = form.querySelector('button[data-ready-text]');
+          if (btn) { btn.textContent = btn.dataset.readyText; btn.disabled = false; }
+        });
+      });
       document.addEventListener('keydown', function(e) {
         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
           e.preventDefault();

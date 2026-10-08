@@ -59,7 +59,14 @@ fn usage_is_tool_level_and_unknown_tools_survive() {
         .unwrap();
     assert_eq!(
         columns,
-        vec!["id", "executable", "tool_id", "timestamp", "machine_id"]
+        vec![
+            "id",
+            "executable",
+            "tool_id",
+            "timestamp",
+            "machine_id",
+            "source"
+        ]
     );
 }
 

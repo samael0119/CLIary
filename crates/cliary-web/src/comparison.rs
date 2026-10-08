@@ -360,6 +360,7 @@ mod tests {
             App {
                 core: Arc::new(core),
                 csrf: "test-token".into(),
+                imports: Default::default(),
             },
         )
     }

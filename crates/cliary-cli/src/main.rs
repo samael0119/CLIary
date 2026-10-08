@@ -1,3 +1,4 @@
+mod onboarding;
 mod shell;
 mod ui;
 
@@ -62,6 +63,21 @@ enum Command {
     },
     History {
         tool: Option<String>,
+        /// Show undated imported observations, excluded from usage statistics.
+        #[arg(long, conflicts_with = "tool")]
+        undated: bool,
+    },
+    /// Preview or apply a selected Shell history file. Never imports automatically.
+    ImportHistory {
+        #[arg(long, value_enum)]
+        shell: ImportShell,
+        #[arg(long)]
+        file: std::path::PathBuf,
+        /// Explicit Zsh `alias -L` or Bash `alias -p` snapshot; never executed.
+        #[arg(long)]
+        aliases_file: Option<std::path::PathBuf>,
+        #[arg(long)]
+        apply: bool,
     },
     Stats {
         #[arg(long)]
@@ -73,6 +89,11 @@ enum Command {
     Wrapped {
         #[arg(allow_hyphen_values = true)]
         year: Option<i32>,
+        /// Save a private offline report; refuses to overwrite existing files.
+        #[arg(long, conflicts_with = "json")]
+        output: Option<std::path::PathBuf>,
+        #[arg(long, value_enum, requires = "output")]
+        format: Option<ReportFormat>,
     },
     Sync {
         #[arg(long)]
@@ -94,6 +115,19 @@ enum Command {
     },
 }
 
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum ReportFormat {
+    Html,
+    Json,
+}
+
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum ImportShell {
+    Bash,
+    Zsh,
+    Fish,
+}
+
 #[derive(Subcommand)]
 enum ConfigCommand {
     Show,
@@ -101,6 +135,8 @@ enum ConfigCommand {
 }
 #[derive(Subcommand)]
 enum SetupCommand {
+    /// Interactively preview and optionally import existing Bash/Zsh/Fish history.
+    History,
     Shell {
         #[arg(long)]
         shell: Option<String>,
@@ -112,18 +148,30 @@ enum SetupCommand {
 }
 #[derive(Subcommand)]
 enum InternalCommand {
-    Record { executable: String },
+    Record {
+        executable: String,
+        #[arg(long)]
+        resolved_executable: Option<String>,
+    },
     SkipScan,
+    SkipHistoryGuide,
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
     if let Command::Internal {
-        command: InternalCommand::Record { executable },
+        command:
+            InternalCommand::Record {
+                executable,
+                resolved_executable,
+            },
     } = &args.command
     {
         if let Ok(core) = Cliary::open() {
-            let _ = core.record_usage(executable);
+            let _ = core.record_usage_resolved(
+                executable,
+                resolved_executable.as_deref().unwrap_or(executable),
+            );
         }
         return Ok(());
     }
@@ -135,22 +183,40 @@ fn main() -> Result<()> {
         core.skip_initial_scan()?;
         return Ok(());
     }
+    if let Command::Internal {
+        command: InternalCommand::SkipHistoryGuide,
+    } = &args.command
+    {
+        core.complete_history_import_onboarding()?;
+        return Ok(());
+    }
     let lang = core.locale(args.lang.as_deref())?;
+    let interactive =
+        !args.json && std::io::stdin().is_terminal() && std::io::stderr().is_terminal();
     if !matches!(
         &args.command,
-        Command::Scan | Command::Sync { .. } | Command::Config { .. } | Command::Setup { .. }
+        Command::ImportHistory { .. }
+            | Command::Scan
+            | Command::Sync { .. }
+            | Command::Config { .. }
+            | Command::Setup { .. }
     ) {
-        if core.initial_scan_pending()? && !args.json && std::io::stdin().is_terminal() {
+        if core.initial_scan_pending()? && interactive {
             first_run(&core, &lang)?;
-        } else if core.ensure_initial_scan()? && !args.json {
-            eprintln!(
-                "{}",
-                tr(
-                    &lang,
-                    "Initial installed-tool scan complete.",
-                    "已完成首次安装工具扫描。"
-                )
-            );
+        } else {
+            if core.ensure_initial_scan()? && !args.json {
+                eprintln!(
+                    "{}",
+                    tr(
+                        &lang,
+                        "Initial installed-tool scan complete.",
+                        "已完成首次安装工具扫描。"
+                    )
+                );
+            }
+            if interactive && core.history_import_onboarding_pending()? {
+                onboarding::offer_history_import(&core, &lang)?;
+            }
         }
     }
     let theme = ui::Theme::detect();
@@ -666,7 +732,26 @@ fn main() -> Result<()> {
             }
             status(args.json, tr(&lang, "Note saved", "备注已保存"))?;
         }
-        Command::History { tool } => {
+        Command::History { tool, undated } => {
+            if undated {
+                let items = core.undated_history()?;
+                if args.json {
+                    out(json!(items))?;
+                } else {
+                    println!(
+                        "{}",
+                        tr(
+                            &lang,
+                            "Undated observations — excluded from all statistics",
+                            "无日期历史记录，不进入任何时间统计"
+                        )
+                    );
+                    for item in items {
+                        println!("{}  {}", item.executable, item.occurrences);
+                    }
+                }
+                return Ok(());
+            }
             let history = core.history(tool.as_deref())?;
             if args.json {
                 out(json!(history))?
@@ -815,8 +900,151 @@ fn main() -> Result<()> {
                 println!();
             }
         }
-        Command::Wrapped { year } => {
+        Command::ImportHistory {
+            shell,
+            file,
+            apply,
+            aliases_file,
+        } => {
+            let format = match shell {
+                ImportShell::Bash => cliary_core::HistoryFormat::Bash,
+                ImportShell::Zsh => cliary_core::HistoryFormat::Zsh,
+                ImportShell::Fish => cliary_core::HistoryFormat::Fish,
+            };
+            let report =
+                core.import_history_with_aliases(&file, format, apply, aliases_file.as_deref())?;
+            if apply {
+                core.complete_history_import_onboarding()?;
+            }
+            if args.json {
+                out(json!(report))?;
+            } else {
+                println!(
+                    "{}",
+                    tr(
+                        &lang,
+                        if apply {
+                            "History import applied"
+                        } else {
+                            "Preview only — nothing imported"
+                        },
+                        if apply {
+                            "历史导入完成"
+                        } else {
+                            "仅预览，尚未导入"
+                        }
+                    )
+                );
+                println!(
+                    "{}: {} · {}: {} · {}: {}",
+                    tr(&lang, "New dated records", "新增有日期记录"),
+                    report.new_timed,
+                    tr(&lang, "Undated observations", "无日期记录"),
+                    report.undated,
+                    tr(&lang, "Skipped / duplicates", "跳过 / 重复"),
+                    format_args!("{} / {}", report.skipped, report.duplicates)
+                );
+                if let (Some(first), Some(last)) = (report.first_timestamp, report.last_timestamp) {
+                    let date = |t| {
+                        chrono::DateTime::from_timestamp(t, 0)
+                            .unwrap()
+                            .with_timezone(&chrono::Local)
+                            .format("%Y-%m-%d %H:%M:%S")
+                            .to_string()
+                    };
+                    println!(
+                        "{}: {} → {}",
+                        tr(&lang, "Local date range", "本地日期范围"),
+                        date(first),
+                        date(last)
+                    );
+                }
+                println!(
+                    "{}: {}",
+                    tr(&lang, "Sample tools", "工具预览"),
+                    report.sample_tools.join(", ")
+                );
+                if aliases_file.is_some() {
+                    println!(
+                        "{}: {}",
+                        tr(
+                            &lang,
+                            "Alias → executable (snapshot evidence)",
+                            "别名 → 程序（别名表依据）"
+                        ),
+                        report
+                            .alias_resolutions
+                            .iter()
+                            .map(|a| format!("{} → {}", a.alias, a.executable))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    );
+                    println!(
+                        "{}: {}",
+                        tr(
+                            &lang,
+                            "Existing unmatched imported records to classify",
+                            "此次归类的已有未识别导入记录"
+                        ),
+                        report.reclassified_records
+                    );
+                }
+                println!(
+                    "{}",
+                    tr(
+                        &lang,
+                        "No arguments saved. Undated observations are excluded from annual statistics. Alias snapshots describe selected definitions, not proven past configuration; compound commands and functions are not reconstructed.",
+                        "不保存参数，无日期记录不进入年度统计。别名表只代表选定的定义，不能证明过去配置；不会还原复合命令或函数。"
+                    )
+                );
+                if !apply {
+                    println!(
+                        "{}",
+                        tr(
+                            &lang,
+                            "Add --apply to import this file. Same-second identical tools are deduplicated against live capture.",
+                            "添加 --apply 才会导入此文件；会与同秒同工具的实时采集记录去重。"
+                        )
+                    );
+                }
+            }
+        }
+        Command::Wrapped {
+            year,
+            output,
+            format,
+        } => {
             let report = core.wrapped(year)?;
+            if let Some(path) = output {
+                let body = match format.unwrap_or(ReportFormat::Html) {
+                    ReportFormat::Html => cliary_web::wrapped_html(&report, &lang),
+                    ReportFormat::Json => serde_json::to_string_pretty(&report)?,
+                };
+                let mut options = std::fs::OpenOptions::new();
+                options.write(true).create_new(true);
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::OpenOptionsExt;
+                    options.mode(0o600);
+                }
+                let mut file = options
+                    .open(&path)
+                    .context("cannot create report; choose a new output filename")?;
+                if let Err(error) = file
+                    .write_all(body.as_bytes())
+                    .and_then(|_| file.sync_all())
+                {
+                    drop(file);
+                    let _ = std::fs::remove_file(&path);
+                    return Err(error.into());
+                }
+                println!(
+                    "{}: {}",
+                    tr(&lang, "Report saved", "报告已保存"),
+                    path.display()
+                );
+                return Ok(());
+            }
             if args.json {
                 out(json!(report))?;
             } else {
@@ -829,7 +1057,7 @@ fn main() -> Result<()> {
                 }
                 println!(
                     "  {}: {} · {}: {} · {}: {}",
-                    tr(&lang, "Captured runs", "已记录调用"),
+                    tr(&lang, "Recorded entries", "记录条数"),
                     report.total_runs,
                     tr(&lang, "Active days", "活跃天数"),
                     report.active_days,
@@ -837,8 +1065,8 @@ fn main() -> Result<()> {
                     report.tools_used
                 );
                 println!("  {}", theme.dim(tr(&lang,
-                    "Local calendar time. Captured invocations only; gaps do not mean inactivity.",
-                    "按本地日历统计，仅包含已采集的调用；记录空缺不代表没有使用。")));
+                    "Local calendar time. Dated capture and imported entries; gaps do not mean inactivity.",
+                    "按本地日历统计，包含有日期的采集与导入记录；空缺不代表没有使用。")));
                 if report.total_runs == 0 {
                     println!(
                         "\n  {}",
@@ -853,8 +1081,8 @@ fn main() -> Result<()> {
                         "  {}",
                         tr(
                             &lang,
-                            "Then open a new terminal. Earlier commands are not imported.",
-                            "然后打开新终端；不会导入之前的命令。"
+                            "Open a new terminal for capture; import existing history explicitly with import-history.",
+                            "打开新终端采集；旧历史可通过 import-history 显式导入。"
                         )
                     );
                 } else {
@@ -874,11 +1102,111 @@ fn main() -> Result<()> {
                 }
                 println!(
                     "\n  {}",
-                    theme.bold(tr(&lang, "Captured runs by month", "每月已记录调用"))
+                    theme.bold(tr(&lang, "Recorded entries by month", "每月记录条数"))
                 );
                 for month in &report.monthly_activity {
                     println!("  {}  {}", month.name, month.count);
                 }
+                println!(
+                    "\n  {}: {}",
+                    tr(&lang, "First recorded this year", "本年首次记录的工具"),
+                    report.insights.new_tools_count
+                );
+                for item in &report.insights.new_tools {
+                    println!("  {} · {} · {}", item.name, item.runs, item.first_recorded);
+                }
+                if let Some(item) = &report.insights.breakout_tool {
+                    println!(
+                        "  {}: {} ({})",
+                        tr(
+                            &lang,
+                            "Top newly recorded tool",
+                            "年度新宠（新记录中最常用）"
+                        ),
+                        item.name,
+                        item.runs
+                    );
+                }
+                println!(
+                    "\n  {}",
+                    tr(
+                        &lang,
+                        "Categories (current Catalog; may overlap)",
+                        "分类（当前工具库，可重叠）"
+                    )
+                );
+                for item in &report.insights.top_categories {
+                    println!(
+                        "  {}  {}",
+                        report
+                            .insights
+                            .category_labels
+                            .get(&item.name)
+                            .map(|n| localized(n, &lang))
+                            .filter(|s| !s.is_empty())
+                            .unwrap_or(&item.name),
+                        item.count
+                    );
+                }
+                println!(
+                    "\n  {}",
+                    tr(
+                        &lang,
+                        "Low activity favorites (saved >=90 days; <=2 entries after saving in year)",
+                        "低频收藏（已收藏至少90天，年度收藏后记录不超过2条）"
+                    )
+                );
+                for item in &report.insights.low_activity_favorites {
+                    println!("  {} · {} · {}", item.name, item.runs, item.favorited_at);
+                }
+                if let Some(c) = &report.insights.comparison {
+                    println!(
+                        "\n  {} {}: {} → {} ({})",
+                        tr(
+                            &lang,
+                            if c.year_to_date {
+                                "Same-period comparison"
+                            } else {
+                                "Year comparison"
+                            },
+                            if c.year_to_date {
+                                "上年同期对比"
+                            } else {
+                                "年度对比"
+                            }
+                        ),
+                        c.previous_year,
+                        c.previous_runs,
+                        c.current_runs,
+                        c.change_percent
+                            .map(|n| format!("{n:+.1}%"))
+                            .unwrap_or_else(|| tr(&lang, "no baseline", "无上年基数").into())
+                    );
+                    println!("  {} / {}", c.previous_end, c.current_end);
+                    for item in &report.insights.tool_changes {
+                        println!(
+                            "  {}: {} → {}",
+                            item.name, item.previous_runs, item.current_runs
+                        );
+                    }
+                }
+                println!("\n  {}", tr(&lang, "Record sources", "记录来源"));
+                for item in &report.insights.source_counts {
+                    println!("  {}  {}", item.name, item.count);
+                }
+                println!(
+                    "  {}: {}",
+                    tr(&lang, "Undated tools excluded", "未归入年份的无日期工具"),
+                    report.insights.undated_tools
+                );
+                println!(
+                    "  {}",
+                    tr(
+                        &lang,
+                        "Imported history entries may omit or merge executions. Changes describe records, not complete usage or replacement of tools.",
+                        "导入历史可能遗漏或合并调用。变化仅描述记录，不代表完整使用量或工具替代关系。"
+                    )
+                );
                 println!();
             }
         }
@@ -920,6 +1248,14 @@ fn main() -> Result<()> {
             }
         },
         Command::Setup { command } => match command {
+            SetupCommand::History => {
+                if !interactive {
+                    bail!(
+                        "setup history requires an interactive terminal; use import-history --shell SHELL --file PATH for scripts"
+                    );
+                }
+                onboarding::offer_history_import(&core, &lang)?;
+            }
             SetupCommand::Shell {
                 shell,
                 enable,
@@ -954,8 +1290,8 @@ fn first_run(core: &Cliary, lang: &str) -> Result<()> {
         tr(lang, "Welcome to CLIary", "欢迎使用 CLIary"),
         tr(
             lang,
-            "Let's set up your local workspace. This takes about a minute.",
-            "我们先设置你的本地工作空间，大约需要一分钟。"
+            "Set up your local workspace. You can skip each step and return later.",
+            "设置你的本地工作空间。每一步都可跳过，稍后再设置。"
         )
     );
     if ask_yes_no(
@@ -1013,6 +1349,7 @@ fn first_run(core: &Cliary, lang: &str) -> Result<()> {
             );
         }
     }
+    onboarding::offer_history_import(core, lang)?;
     eprintln!(
         "\n{}\n",
         tr(
@@ -1027,7 +1364,9 @@ fn ask_yes_no(prompt: &str, default_yes: bool) -> Result<bool> {
     eprint!("{prompt}");
     std::io::stderr().flush()?;
     let mut answer = String::new();
-    std::io::stdin().read_line(&mut answer)?;
+    if std::io::stdin().read_line(&mut answer)? == 0 {
+        return Ok(false);
+    }
     let answer = answer.trim().to_ascii_lowercase();
     Ok(match answer.as_str() {
         "y" | "yes" => true,

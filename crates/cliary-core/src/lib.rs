@@ -1,9 +1,13 @@
 mod catalog;
 mod history;
+mod history_import;
+mod history_sources;
 mod installed;
 mod paths;
+mod shell_alias;
 mod sync;
 mod user;
+mod wrapped_insights;
 
 use anyhow::{Context, Result};
 use rusqlite::Connection;
@@ -12,9 +16,15 @@ use serde::{Deserialize, Serialize};
 pub use catalog::{CompareRow, ToolDetail, ToolResult, compare_feature_label};
 pub use cliary_catalog::{InstallMethod, LocalizedName, Manifest, Tool};
 pub use history::{CountItem, HistorySummary, Stats, UsageEvent, Wrapped};
+pub use history_import::{HistoryFormat, HistoryImportPlan, ImportReport, UndatedTool};
+pub use history_sources::{HistoryCandidate, history_candidates};
 pub use installed::InstalledTool;
 pub use paths::Paths;
+pub use shell_alias::AliasResolution;
 pub use user::FavoriteEntry;
+pub use wrapped_insights::{
+    FavoriteInsight, NewToolInsight, ToolChange, WrappedInsights, YearComparison,
+};
 
 #[derive(Clone, Debug)]
 pub struct Cliary {

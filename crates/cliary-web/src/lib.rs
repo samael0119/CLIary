@@ -1,4 +1,5 @@
 mod comparison;
+mod history_import;
 mod installed;
 mod wrapped;
 
@@ -20,6 +21,7 @@ use std::{fmt::Write, sync::Arc};
 struct App {
     core: Arc<Cliary>,
     csrf: String,
+    imports: history_import::Previews,
 }
 #[derive(Template)]
 #[template(path = "page.html")]
@@ -104,6 +106,7 @@ pub fn serve(core: Cliary) -> anyhow::Result<()> {
             let app = App {
                 core: Arc::new(core),
                 csrf: hex::encode(bytes),
+                imports: Default::default(),
             };
             let router = Router::new()
                 .route("/", get(home))
@@ -118,8 +121,10 @@ pub fn serve(core: Cliary) -> anyhow::Result<()> {
                 .route("/favorites/remove", post(remove_favorite))
                 .route("/compare", get(comparison::compare))
                 .route("/history", get(history))
+                .merge(history_import::routes())
                 .route("/stats", get(stats))
                 .route("/wrapped", get(wrapped::wrapped))
+                .route("/wrapped/export", get(wrapped::export))
                 .route("/language", post(set_language))
                 .route("/assets/style.css", get(css))
                 .route("/assets/htmx.min.js", get(htmx))
@@ -830,8 +835,8 @@ fn usage_empty_state(lang: &str, route: &str, last_used: Option<&str>) -> String
         tr(lang, "Refresh records", "刷新记录"),
         tr(
             lang,
-            "Only executable names, timestamps and a local machine ID are stored. Command arguments are never saved; existing Shell history is not imported.",
-            "仅保存可执行文件名、时间和本机标识，不保存命令参数，也不导入已有 Shell 历史。"
+            "Only executable names, timestamps and a local machine ID are stored. Command arguments are never saved; existing Shell history is not imported automatically.",
+            "仅保存可执行文件名、时间和本机标识，不保存命令参数，不会自动导入已有 Shell 历史。"
         ),
         tr(
             lang,
@@ -851,6 +856,29 @@ fn usage_empty_state(lang: &str, route: &str, last_used: Option<&str>) -> String
     )
 }
 
+fn imported_history_context(app: &App, lang: &str) -> Result<String, (StatusCode, String)> {
+    let items = app.core.undated_history().map_err(error)?;
+    let mut body=format!("<section class='wrapped-section history-import-entry'><h2>{}</h2><p>{}</p><a class='btn btn-primary' href='/history/import'>{}</a><details class='wrapped-import-help'><summary>{}</summary><pre><code>cliary import-history --shell zsh --file \"$HISTFILE\"
+cliary import-history --shell zsh --file \"$HISTFILE\" --apply
+cliary import-history --shell bash --file ~/.bash_history
+cliary import-history --shell fish --file ~/.local/share/fish/fish_history</code></pre></details>",tr(lang,"Existing Shell history","已有 Shell 历史"),tr(lang,"Dated imported entries appear in statistics and Wrapped. Shell history can omit executions. Preview before importing; arguments are never saved.","有日期的导入记录会进入统计和年报。Shell 历史可能遗漏调用，先预览再导入，不保存参数。"),tr(lang,"Preview and import history","预览并导入历史"),tr(lang,"Import from your terminal","在终端导入"));
+    if !items.is_empty() {
+        write!(body,"<h3>{} ({})</h3><p>{}</p><table class='wrapped-detail-table'><thead><tr><th scope='col'>{}</th><th scope='col'>{}</th></tr></thead><tbody>",tr(lang,"Undated tools","无日期工具"),items.len(),tr(lang,"These observations have no reliable date and are excluded from statistics. Showing up to twenty; history --undated lists all. Counts are the largest retained snapshot, not total executions.","这些观察记录缺少可靠日期，不进入统计。最多展示20项；history --undated 可查看全部。次数取保留快照中的最大值，不代表总调用量。"),tr(lang,"Executable","程序名"),tr(lang,"Observations","观察次数")).unwrap();
+        for item in items.iter().take(20) {
+            write!(
+                body,
+                "<tr><th scope='row'><code>{}</code></th><td>{}</td></tr>",
+                esc(&item.executable),
+                item.occurrences
+            )
+            .unwrap();
+        }
+        body.push_str("</tbody></table>");
+    }
+    body.push_str("</section>");
+    Ok(body)
+}
+
 async fn history(State(app): State<App>) -> WebResult {
     let lang = app.core.locale(None).map_err(error)?;
     let summary = app.core.history(None).map_err(error)?;
@@ -859,20 +887,25 @@ async fn history(State(app): State<App>) -> WebResult {
             &app,
             "History",
             format!(
-                "<section class='page-intro'><h1>{}</h1><p>{}</p></section>{}",
+                "<section class='page-intro'><h1>{}</h1><p>{}</p>{}</section>{}",
                 tr(&lang, "Usage History", "使用历史"),
                 tr(
                     &lang,
                     "See the tools you use and how your habits evolve.",
                     "了解常用工具，积累真实的使用轨迹。"
                 ),
-                usage_empty_state(&lang, "/history", None)
+                history_import::entry(&lang),
+                format_args!(
+                    "{}{}",
+                    usage_empty_state(&lang, "/history", None),
+                    imported_history_context(&app, &lang)?
+                )
             ),
         );
     }
     let stats = app.core.stats(None, None).map_err(error)?;
     let mut body = format!(
-        "<section class='page-intro'><span class='eyebrow'>{}</span><h1>{}</h1><p>{}</p></section><div class='cards grid-4'><div><div class='card-top'><span class='card-icon'>⚡</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-1'>◷</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-2'>⌘</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-3'>🕒</span></div><strong>{}</strong><span>{}</span></div></div><div class='dashboard-grid'><section class='panel'><div class='panel-heading'><div><span class='eyebrow'>{}</span><h2>{}</h2></div></div><div class='rank-list'>",
+        "<section class='page-intro'><span class='eyebrow'>{}</span><h1>{}</h1><p>{}</p>{}</section><div class='cards grid-4'><div><div class='card-top'><span class='card-icon'>⚡</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-1'>◷</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-2'>⌘</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-3'>🕒</span></div><strong>{}</strong><span>{}</span></div></div><div class='dashboard-grid'><section class='panel'><div class='panel-heading'><div><span class='eyebrow'>{}</span><h2>{}</h2></div></div><div class='rank-list'>",
         tr(&lang, "EXECUTION LOG", "执行记录"),
         tr(&lang, "Usage History", "使用历史"),
         tr(
@@ -880,8 +913,9 @@ async fn history(State(app): State<App>) -> WebResult {
             "Private telemetry recorded strictly on this machine.",
             "本地 Shell 记录的工具使用轨迹，100% 留存在本机。"
         ),
+        history_import::entry(&lang),
         summary.runs,
-        tr(&lang, "Total Runs", "总运行次数"),
+        tr(&lang, "Recorded entries", "记录条数"),
         summary.active_days,
         tr(&lang, "Active Days", "活跃天数"),
         stats.tools_used,
@@ -927,6 +961,7 @@ async fn history(State(app): State<App>) -> WebResult {
         .unwrap();
     }
     write!(body, "</div></section></div>").unwrap();
+    body.push_str(&imported_history_context(&app, &lang)?);
     page(&app, "History", body)
 }
 
@@ -1082,6 +1117,7 @@ mod tests {
             App {
                 core: Arc::new(core),
                 csrf: "test-token".into(),
+                imports: Default::default(),
             },
         )
     }
@@ -1172,6 +1208,7 @@ mod favorite_tests {
             App {
                 core: Arc::new(core),
                 csrf: "test-token".into(),
+                imports: Default::default(),
             },
         )
     }
@@ -1372,4 +1409,9 @@ mod favorite_tests {
             "keep after update"
         );
     }
+}
+
+/// Render a local offline annual report from the same facts as the Web UI.
+pub fn wrapped_html(report: &cliary_core::Wrapped, lang: &str) -> String {
+    wrapped::standalone(report, lang)
 }

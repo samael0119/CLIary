@@ -6,13 +6,15 @@ repo=${CLIARY_REPO:-@GITHUB_REPOSITORY@}
 install_dir=${CLIARY_INSTALL_DIR:-"$HOME/.local/bin"}
 history=ask
 scan=ask
+import_history=ask
 for arg in "$@"; do
   case "$arg" in
     --scan) scan=yes ;;
     --no-scan) scan=no ;;
     --enable-history) history=yes ;;
-    --no-history) history=no ;;
-    --help) printf '%s\n' 'Usage: install.sh [--scan|--no-scan] [--enable-history|--no-history]'; exit 0 ;;
+    --no-history) history=no; import_history=no ;;
+    --no-import-history) import_history=no ;;
+    --help) printf '%s\n' 'Usage: install.sh [--scan|--no-scan] [--enable-history|--no-history] [--no-import-history]' 'History import is optional: preview first, then confirm. --no-history skips capture and the import guide.'; exit 0 ;;
     *) printf 'Unknown option: %s\n' "$arg" >&2; exit 2 ;;
   esac
 done
@@ -78,6 +80,15 @@ if [ "$history" = ask ]; then
 fi
 if [ "$history" = yes ]; then
   "$install_dir/cliary" setup shell --enable
+fi
+if [ "$import_history" != no ]; then
+  if [ -t 0 ] && [ -t 2 ]; then
+    "$install_dir/cliary" setup history || printf '%s\n' 'History guide did not finish; run cliary setup history later.' >&2
+  else
+    printf '%s\n' 'Existing Bash/Zsh/Fish history is not imported automatically.' 'Run cliary setup history in a terminal to select a file, preview counts and choose whether to import.' 'You can also preview and import from the Web History page; dated records enrich annual reports.'
+  fi
+else
+  "$install_dir/cliary" internal skip-history-guide
 fi
 case ":$PATH:" in
   *":$install_dir:"*) ;;
