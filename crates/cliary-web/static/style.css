@@ -10,6 +10,9 @@
   --surface-elevated: #ffffff;
   --surface-sunken: #f0f4f2;
   --green: #059669;
+  --button-primary-bg: #047857;
+  --button-primary-hover: #065f46;
+  --button-primary-text: #fff;
   --green-dark: #047857;
   --green-light: #ecfdf5;
   --green-border: #a7f3d0;
@@ -410,11 +413,11 @@ p { line-height: 1.6; color: var(--muted); }
   border: 1px solid transparent;
 }
 .btn-primary {
-  background: var(--green);
-  color: #fff;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
 }
 .btn-primary:hover {
-  background: var(--green-dark);
+  background: var(--button-primary-hover);
   transform: translateY(-1px);
 }
 .btn-outline {
@@ -509,8 +512,8 @@ p { line-height: 1.6; color: var(--muted); }
 [data-theme="dark"] .hero-search input, [data-theme="dark"] .search-form input { color: #f1f7f4; }
 .hero-search input::placeholder, .search-form input::placeholder { color: #9bb0a5; }
 .hero-search button, .search-form button, main form:not(.hero-search):not(.search-form):not(.inline-form) button {
-  background: #059669;
-  color: #fff;
+  background: var(--button-primary-bg);
+  color: var(--button-primary-text);
   border: 0;
   border-radius: 7px;
   padding: 9px 15px;
@@ -519,8 +522,8 @@ p { line-height: 1.6; color: var(--muted); }
   white-space: nowrap;
   transition: background 0.15s, transform 0.15s;
 }
-.hero-search button:hover, .search-form button:hover, main form button:hover {
-  background: #10b981;
+.hero-search button:hover, .search-form button:hover, main form:not(.inline-form) button:hover {
+  background: var(--button-primary-hover);
   transform: translateY(-1px);
 }
 .hero-hint {
