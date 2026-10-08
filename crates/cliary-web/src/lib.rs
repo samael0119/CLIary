@@ -1,3 +1,5 @@
+mod installed;
+
 use askama::Template;
 use axum::{
     Form, Router,
@@ -110,7 +112,7 @@ pub fn serve(core: Cliary) -> anyhow::Result<()> {
                 .route("/tools/{id}", get(tool))
                 .route("/tools/{id}/favorite", post(favorite))
                 .route("/tools/{id}/note", post(note))
-                .route("/installed", get(installed))
+                .route("/installed", get(installed::installed))
                 .route("/scan", post(scan))
                 .route("/categories", get(categories))
                 .route("/favorites", get(favorites))
@@ -654,140 +656,6 @@ async fn note(
     check(&app, &form.csrf)?;
     app.core.save_note(&id, &form.body).map_err(error)?;
     Ok(Redirect::to(&format!("/tools/{}", esc(&id))))
-}
-
-#[derive(Deserialize)]
-struct InstalledQuery {
-    filter: Option<String>,
-}
-async fn installed(State(app): State<App>, Query(query): Query<InstalledQuery>) -> WebResult {
-    let lang = app.core.locale(None).map_err(error)?;
-    let entries = app.core.installed().map_err(error)?;
-    let scanned = app.core.has_scanned().map_err(error)?;
-    let show_all = query.filter.as_deref() == Some("all");
-
-    let total_binaries = entries.len();
-    let matched_tools: Vec<_> = entries
-        .iter()
-        .filter(|x| x.tool_id.is_some())
-        .cloned()
-        .collect();
-    let catalog_count = matched_tools.len();
-
-    let mut body = format!(
-        "<section class='page-intro'><span class='eyebrow'>{}</span><h1>{}</h1><p>{}</p></section><div class='toolbar-card'><div style='display:flex; align-items:center; gap:16px; flex-wrap:wrap;'><div class='tab-nav'><a href='/installed' class='tab-btn {}'>{} ({})</a><a href='/installed?filter=all' class='tab-btn {}'>{} ({})</a></div></div><form method='post' action='/scan' style='margin:0;'><input type='hidden' name='csrf' value='{}'><button type='submit' class='btn btn-primary'>⚡ {}</button></form></div>",
-        tr(&lang, "LOCAL TOOLBOX", "本地工具箱"),
-        tr(&lang, "Installed Tools", "已安装工具"),
-        if scanned {
-            tr(
-                &lang,
-                "Detected binaries on your local PATH synchronized with the catalog.",
-                "检测到本机 PATH 环境变量中的程序，并与工具库进行关联匹配。",
-            )
-        } else {
-            tr(
-                &lang,
-                "Your machine has not been scanned yet. Scan now to detect tools.",
-                "尚未扫描本机工具，点击右侧按钮立即扫描。",
-            )
-        },
-        if !show_all { "active" } else { "" },
-        tr(&lang, "Catalog Tools", "已识别目录工具"),
-        catalog_count,
-        if show_all { "active" } else { "" },
-        tr(&lang, "All Binaries", "全部系统程序"),
-        total_binaries,
-        app.csrf,
-        tr(&lang, "Scan Now", "立即重新扫描")
-    );
-
-    if !scanned {
-        write!(
-            body,
-            "<div class='empty-inline'><span class='empty-icon'>⚡</span><strong>{}</strong><p>{}</p><form method='post' action='/scan'><input type='hidden' name='csrf' value='{}'><button type='submit' class='btn btn-primary'>⚡ {}</button></form></div>",
-            tr(&lang, "Scan required", "尚未执行扫描"),
-            tr(&lang, "Scan your system to identify which tools are installed and ready to run.", "扫描你的系统以自动检测哪些工具已安装并就绪可用。"),
-            app.csrf,
-            tr(&lang, "Start System Scan", "开始系统扫描")
-        ).unwrap();
-    } else if !show_all {
-        if matched_tools.is_empty() {
-            write!(
-                body,
-                "<div class='empty-inline'><span class='empty-icon'>▤</span><strong>{}</strong><p>{}</p><a class='btn btn-primary' href='/search'>{} ↗</a></div>",
-                tr(&lang, "No catalog tools detected yet", "暂未检测到已收录的目录工具"),
-                tr(&lang, "Install tools from the catalog or browse all system binaries.", "你可以从工具目录中挑选并安装工具，或查看全部系统程序。"),
-                tr(&lang, "Browse Catalog", "浏览工具库")
-            ).unwrap();
-        } else {
-            let all_tools = app.core.all_tools().map_err(error)?;
-            let tool_map: std::collections::HashMap<String, cliary_core::Tool> =
-                all_tools.into_iter().map(|t| (t.id.clone(), t)).collect();
-            body.push_str("<div class='tool-list'>");
-            for item in matched_tools {
-                let tool_id = item.tool_id.as_deref().unwrap_or("");
-                let tool_opt = tool_map.get(tool_id);
-                let desc = tool_opt
-                    .map(|t| localized(&t.description, &lang))
-                    .unwrap_or("");
-                let ver_str = item
-                    .version
-                    .as_deref()
-                    .map(|v| format!("<span class='badge-subtle'>v{}</span>", esc(v)))
-                    .unwrap_or_default();
-                let src_str = item
-                    .source
-                    .as_deref()
-                    .map(|s| format!("<span class='badge-source'>{}</span>", esc(s)))
-                    .unwrap_or_default();
-                write!(
-                    body,
-                    "<a class='tool-card' href='/tools/{}'><span class='tool-avatar'>{}</span><span class='tool-copy'><strong>{}</strong><small>{}</small></span><span class='tool-card-end'>{}{}<span class='row-arrow'>↗</span></span></a>",
-                    esc(tool_id),
-                    esc(&item.executable.chars().next().unwrap_or('›').to_string()),
-                    esc(&item.executable),
-                    esc(desc),
-                    ver_str,
-                    src_str
-                ).unwrap();
-            }
-            body.push_str("</div>");
-        }
-    } else {
-        if entries.is_empty() {
-            write!(
-                body,
-                "<div class='empty-inline'><span class='empty-icon'>▤</span><strong>{}</strong><p>{}</p></div>",
-                tr(&lang, "No binaries found", "未检测到可执行程序"),
-                tr(&lang, "Make sure PATH is properly configured.", "请检查 PATH 环境变量是否正确配置。")
-            ).unwrap();
-        } else {
-            body.push_str("<div class='list'>");
-            for item in entries.into_iter().take(500) {
-                let tool_link = if let Some(tid) = &item.tool_id {
-                    format!(
-                        "<a href='/tools/{tid}'><span class='mini-avatar'>{}</span><strong>{}</strong><span class='badge-subtle'>{}</span><span class='badge-source'>{}</span><span style='margin-left:auto; color:var(--green); font-weight:700;'>{} ↗</span></a>",
-                        esc(&item.executable.chars().next().unwrap_or('›').to_string()),
-                        esc(&item.executable),
-                        esc(item.version.as_deref().unwrap_or("—")),
-                        esc(item.source.as_deref().unwrap_or("PATH")),
-                        tr(&lang, "Details", "查看资料")
-                    )
-                } else {
-                    format!(
-                        "<div><span class='mini-avatar' style='opacity:0.6;'>›</span><strong>{}</strong><span class='badge-subtle'>{}</span><span class='badge-source'>{}</span><span style='margin-left:auto; color:var(--muted); font-size:11px; font-family:var(--mono);'>{}</span></div>",
-                        esc(&item.executable),
-                        esc(item.version.as_deref().unwrap_or("—")),
-                        esc(item.source.as_deref().unwrap_or("system")),
-                        esc(&item.path)
-                    )
-                };
-                body.push_str(&tool_link);
-            }
-            body.push_str("</div>");
-        }
-    }
-    page(&app, "Installed", body)
 }
 
 #[derive(Deserialize)]
