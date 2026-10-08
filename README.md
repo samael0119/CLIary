@@ -57,11 +57,31 @@ CLIary stores the executable name, timestamp, and a random local machine ID for 
 
 Scanning installed tools does not enable usage capture. Run `cliary setup shell --enable` in your usual Shell, open a new terminal, run an external tool such as `git --version`, and refresh the Web page after the next command prompt. For a locally built binary outside `PATH`, replace `cliary` with its actual path. The History and Statistics pages provide these steps when there are no records.
 
-If records are still missing, check `cliary history` in the terminal and verify that it and the Web UI use the same data directory (`CLIARY_DATA_DIR` / `XDG_DATA_HOME`). Existing Shell history is not imported. The Web Statistics page only shows the last 30 days; older records remain in History. Disable future capture with `cliary setup shell --disable` and open a new terminal; saved records remain.
+If records are still missing, check `cliary history` in the terminal and verify that it and the Web UI use the same data directory (`CLIARY_DATA_DIR` / `XDG_DATA_HOME`). Existing Shell history is not imported automatically; use the opt-in import below. The Web Statistics page only shows the last 30 days; older records remain in History. Disable future capture with `cliary setup shell --disable` and open a new terminal; saved records remain.
+
+## Import existing Shell history / 导入旧历史
+
+```sh
+cliary import-history --shell zsh --file "$HISTFILE"          # Preview only
+cliary import-history --shell zsh --file "$HISTFILE" --apply  # Explicit import
+cliary import-history --shell bash --file ~/.bash_history
+cliary import-history --shell fish --file ~/.local/share/fish/fish_history
+cliary history --undated --json
+```
+
+Use the actual file your Shell writes; custom `HISTFILE` / XDG paths may differ. CLIary reads only the selected regular file (UTF-8, up to 32 MiB; Zsh metafied bytes are decoded). No Shell is invoked. Preview shows counts, date range and up to 20 executable names; add `--apply` to commit in one transaction. Raw arguments, paths and command strings are never saved or shown.
+
+Bash `#epoch` timestamps, Zsh extended `: epoch:duration;command` and Fish `when` timestamps enter dated statistics. Plain history without timestamps goes into a separate **undated observations** list, never into a guessed year. Invalid/future timestamps, builtins, compound commands, pipelines, substitutions and multiline commands are skipped conservatively; known `sudo`, `env`, assignments and `command` prefixes are supported. Aliases/functions cannot be resolved from a history file and literal names may be unmatched.
+
+Repeated import, copied files and overlapping live capture are deduplicated using this device's executable, second and occurrence number. Same-second repeats in one snapshot retain multiplicity; another snapshot retains the largest observed multiplicity, so indistinguishable same-second commands can be undercounted. Undated counts likewise keep the maximum snapshot count, rather than accumulating on each import. Files from another machine should not be mixed into this device's history. Fish and Shell history settings may merge, omit or trim entries: an imported entry is an observation, not proof of every execution.
+
+导入默认只预览；必须加 `--apply` 才保存。仅记录程序名、可靠时间与来源，不保存完整命令或参数。没有日期的记录可通过 `history --undated` 查看，不进入年报。已有数据库自动升级至 v2，保留记录、收藏和备注；旧版程序不能再打开升级后的数据库。
+
+Format references: [Bash manual](https://www.gnu.org/software/bash/manual/html_node/Bash-History-Facilities.html), [Zsh extended history](https://zsh.sourceforge.io/Doc/Release/Options.html), [Fish history format](https://github.com/fish-shell/fish-shell/blob/master/src/history/yaml_backend.rs).
 
 ## Commands
 
-`search`, `show`, `compare`, `installed`, `scan`, `categories`, `favorites`, `favorite`, `note`, `history`, `stats`, `wrapped`, `sync`, `web`, `config`, and `setup shell` are available. Read commands support `--json`, whose keys stay in English. `cliary note <tool>` opens `$EDITOR`; `--set` and `--delete` are available for scripts. `cliary stats --period 30d` and `cliary stats --year 2026` select periods.
+`import-history`, `search`, `show`, `compare`, `installed`, `scan`, `categories`, `favorites`, `favorite`, `note`, `history`, `stats`, `wrapped`, `sync`, `web`, `config`, and `setup shell` are available. Read commands support `--json`, whose keys stay in English. `cliary note <tool>` opens `$EDITOR`; `--set` and `--delete` are available for scripts. `cliary stats --period 30d` and `cliary stats --year 2026` select periods.
 
 ## Annual report / 年度报告
 
@@ -124,4 +144,4 @@ The GitHub Actions workflow validates PRs and publishes a new Catalog plus four 
 
 ## V0.1 boundaries
 
-Wrapped currently provides a factual annual summary. Data-backed special insights, year-over-year comparisons, export, semantic/AI search, historical shell import, user accounts, and automatic execution of installation commands are planned for later releases.
+Wrapped currently provides a factual annual summary. Data-backed special insights, year-over-year comparisons, export, semantic/AI search, user accounts, and automatic execution of installation commands are planned for later releases.

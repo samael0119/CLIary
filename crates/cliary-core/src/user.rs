@@ -14,13 +14,14 @@ pub struct FavoriteEntry {
 
 impl Cliary {
     pub(crate) fn init_user(&self) -> Result<()> {
-        let db = self.user_db()?;
-        let version: i64 = db.query_row("PRAGMA user_version", [], |row| row.get(0))?;
-        if version > 1 {
+        let mut db = self.user_db()?;
+        db.execute_batch("PRAGMA journal_mode=WAL;")?;
+        let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        let version: i64 = tx.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        if version > 2 {
             bail!("user database was created by a newer CLIary version");
         }
-        db.execute_batch("PRAGMA journal_mode=WAL;
-            CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        tx.execute_batch("CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
             CREATE TABLE IF NOT EXISTS favorites(tool_id TEXT PRIMARY KEY, created_at INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS notes(tool_id TEXT PRIMARY KEY, body TEXT NOT NULL, updated_at INTEGER NOT NULL);
             CREATE TABLE IF NOT EXISTS installed(executable TEXT PRIMARY KEY, path TEXT NOT NULL, version TEXT, source TEXT, tool_id TEXT, scanned_at INTEGER NOT NULL);
@@ -29,7 +30,15 @@ impl Cliary {
             CREATE INDEX IF NOT EXISTS idx_usage_time ON usage_events(timestamp);
             CREATE INDEX IF NOT EXISTS idx_usage_tool ON usage_events(tool_id,timestamp);
             CREATE INDEX IF NOT EXISTS idx_usage_exe ON usage_events(executable,timestamp);
-            PRAGMA user_version=1;")?;
+            CREATE TABLE IF NOT EXISTS history_import_keys(import_key TEXT PRIMARY KEY, source TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS history_undated(executable TEXT PRIMARY KEY, occurrences INTEGER NOT NULL);
+            ")?;
+        if version < 2 {
+            tx.execute_batch("ALTER TABLE usage_events ADD COLUMN source TEXT NOT NULL DEFAULT 'capture';
+                CREATE INDEX idx_usage_identity_time ON usage_events(executable,timestamp,machine_id);
+                PRAGMA user_version=2;")?;
+        }
+        tx.commit()?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;

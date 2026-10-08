@@ -62,6 +62,18 @@ enum Command {
     },
     History {
         tool: Option<String>,
+        /// Show undated imported observations, excluded from usage statistics.
+        #[arg(long, conflicts_with = "tool")]
+        undated: bool,
+    },
+    /// Preview or apply a selected Shell history file. Never imports automatically.
+    ImportHistory {
+        #[arg(long, value_enum)]
+        shell: ImportShell,
+        #[arg(long)]
+        file: std::path::PathBuf,
+        #[arg(long)]
+        apply: bool,
     },
     Stats {
         #[arg(long)]
@@ -92,6 +104,13 @@ enum Command {
         #[command(subcommand)]
         command: InternalCommand,
     },
+}
+
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum ImportShell {
+    Bash,
+    Zsh,
+    Fish,
 }
 
 #[derive(Subcommand)]
@@ -138,7 +157,11 @@ fn main() -> Result<()> {
     let lang = core.locale(args.lang.as_deref())?;
     if !matches!(
         &args.command,
-        Command::Scan | Command::Sync { .. } | Command::Config { .. } | Command::Setup { .. }
+        Command::ImportHistory { .. }
+            | Command::Scan
+            | Command::Sync { .. }
+            | Command::Config { .. }
+            | Command::Setup { .. }
     ) {
         if core.initial_scan_pending()? && !args.json && std::io::stdin().is_terminal() {
             first_run(&core, &lang)?;
@@ -666,7 +689,26 @@ fn main() -> Result<()> {
             }
             status(args.json, tr(&lang, "Note saved", "备注已保存"))?;
         }
-        Command::History { tool } => {
+        Command::History { tool, undated } => {
+            if undated {
+                let items = core.undated_history()?;
+                if args.json {
+                    out(json!(items))?;
+                } else {
+                    println!(
+                        "{}",
+                        tr(
+                            &lang,
+                            "Undated observations — excluded from all statistics",
+                            "无日期历史记录，不进入任何时间统计"
+                        )
+                    );
+                    for item in items {
+                        println!("{}  {}", item.executable, item.occurrences);
+                    }
+                }
+                return Ok(());
+            }
             let history = core.history(tool.as_deref())?;
             if args.json {
                 out(json!(history))?
@@ -813,6 +855,81 @@ fn main() -> Result<()> {
 
                 println!("{}", theme.box_footer(76));
                 println!();
+            }
+        }
+        Command::ImportHistory { shell, file, apply } => {
+            let format = match shell {
+                ImportShell::Bash => cliary_core::HistoryFormat::Bash,
+                ImportShell::Zsh => cliary_core::HistoryFormat::Zsh,
+                ImportShell::Fish => cliary_core::HistoryFormat::Fish,
+            };
+            let report = core.import_history(&file, format, apply)?;
+            if args.json {
+                out(json!(report))?;
+            } else {
+                println!(
+                    "{}",
+                    tr(
+                        &lang,
+                        if apply {
+                            "History import applied"
+                        } else {
+                            "Preview only — nothing imported"
+                        },
+                        if apply {
+                            "历史导入完成"
+                        } else {
+                            "仅预览，尚未导入"
+                        }
+                    )
+                );
+                println!(
+                    "{}: {} · {}: {} · {}: {}",
+                    tr(&lang, "New dated records", "新增有日期记录"),
+                    report.new_timed,
+                    tr(&lang, "Undated observations", "无日期记录"),
+                    report.undated,
+                    tr(&lang, "Skipped / duplicates", "跳过 / 重复"),
+                    format_args!("{} / {}", report.skipped, report.duplicates)
+                );
+                if let (Some(first), Some(last)) = (report.first_timestamp, report.last_timestamp) {
+                    let date = |t| {
+                        chrono::DateTime::from_timestamp(t, 0)
+                            .unwrap()
+                            .with_timezone(&chrono::Local)
+                            .format("%Y-%m-%d %H:%M:%S")
+                            .to_string()
+                    };
+                    println!(
+                        "{}: {} → {}",
+                        tr(&lang, "Local date range", "本地日期范围"),
+                        date(first),
+                        date(last)
+                    );
+                }
+                println!(
+                    "{}: {}",
+                    tr(&lang, "Sample tools", "工具预览"),
+                    report.sample_tools.join(", ")
+                );
+                println!(
+                    "{}",
+                    tr(
+                        &lang,
+                        "No arguments saved. Undated observations are excluded from annual statistics. Shell history may omit executions; aliases and compound commands cannot be reconstructed.",
+                        "不保存参数，无日期记录不进入年度统计。Shell 历史可能遗漏调用；不会还原别名或复合命令。"
+                    )
+                );
+                if !apply {
+                    println!(
+                        "{}",
+                        tr(
+                            &lang,
+                            "Add --apply to import this file. Same-second identical tools are deduplicated against live capture.",
+                            "添加 --apply 才会导入此文件；会与同秒同工具的实时采集记录去重。"
+                        )
+                    );
+                }
             }
         }
         Command::Wrapped { year } => {
