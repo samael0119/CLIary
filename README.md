@@ -103,6 +103,10 @@ The CLI lists longer package details, repository links and examples beneath the 
 
 XDG base directories and `CLIARY_CONFIG_DIR`, `CLIARY_DATA_DIR`, and `CLIARY_CACHE_DIR` are supported. A Catalog update replaces only `catalog.db`. Release builds have a built-in GitHub Catalog URL; source builds can use `cliary sync --url https://github.com/OWNER/REPO/releases/latest/download` or set `catalog_url` in `config.toml`.
 
+`history <tool>` matches saved tool IDs, exact captured executable names, and current Catalog aliases. If a Catalog entry is removed, its existing usage events remain queryable by the saved ID or executable name; `stats` retains those records instead of requiring the old entry. First-recorded dates come from usage events, so a Catalog update does not by itself make an existing tool newly used. Records and IDs are not rewritten or retroactively merged; categorization still uses current Catalog metadata when available.
+
+Catalog 条目移除后，可用原工具 ID 或实际命令名查询已保存的历史，统计也会保留这些记录。首次使用按真实记录时间计算，不因工具库更新而重置；不会改写或自动合并旧记录。
+
 ## Contribute Catalog entries
 
 Add one YAML file under `catalog/tools/<category>/`. English description and at least one executable are required; Simplified Chinese descriptions are encouraged. Categories and tags use stable IDs in `catalog/i18n/`. Validate locally:

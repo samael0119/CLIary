@@ -143,8 +143,10 @@ impl Cliary {
             None => (None, Vec::new()),
         };
         let (first_used, last_used, runs, active_days) = if tool.is_some() {
-            db.query_row("SELECT datetime(MIN(timestamp),'unixepoch','localtime'), datetime(MAX(timestamp),'unixepoch','localtime'), COUNT(*), COUNT(DISTINCT date(timestamp,'unixepoch','localtime')) FROM usage_events WHERE tool_id=?1 OR executable IN (SELECT value FROM json_each(?2))",
-                params![filter_id, serde_json::to_string(&executable_names)?], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)))?
+            // Current Catalog aliases supplement the saved identity; they must
+            // not hide a historical ID or an exact captured executable name.
+            db.query_row("SELECT datetime(MIN(timestamp),'unixepoch','localtime'), datetime(MAX(timestamp),'unixepoch','localtime'), COUNT(*), COUNT(DISTINCT date(timestamp,'unixepoch','localtime')) FROM usage_events WHERE tool_id=?1 OR tool_id=?3 OR executable=?3 OR executable IN (SELECT value FROM json_each(?2))",
+                params![filter_id, serde_json::to_string(&executable_names)?, tool], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)))?
         } else {
             db.query_row("SELECT datetime(MIN(timestamp),'unixepoch','localtime'), datetime(MAX(timestamp),'unixepoch','localtime'), COUNT(*), COUNT(DISTINCT date(timestamp,'unixepoch','localtime')) FROM usage_events", [],
                 |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)))?
@@ -210,12 +212,14 @@ impl Cliary {
         stats.tools_used = counts.len() as u64;
         let mut new_tools = HashSet::new();
         for id in counts.keys() {
+            // counts uses COALESCE(tool_id, executable). Always match that
+            // persisted key, even when the Catalog entry has changed or gone.
             let first: i64 = if let Some(tool) = self.get_tool(id)? {
-                db.query_row("SELECT MIN(timestamp) FROM usage_events WHERE tool_id=?1 OR executable IN (SELECT value FROM json_each(?2))",
+                db.query_row("SELECT MIN(timestamp) FROM usage_events WHERE tool_id=?1 OR executable=?1 OR executable IN (SELECT value FROM json_each(?2))",
                     params![id, serde_json::to_string(&tool.executables)?], |row| row.get(0))?
             } else {
                 db.query_row(
-                    "SELECT MIN(timestamp) FROM usage_events WHERE executable=?1",
+                    "SELECT MIN(timestamp) FROM usage_events WHERE tool_id=?1 OR executable=?1",
                     [id],
                     |row| row.get(0),
                 )?
