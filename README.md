@@ -53,6 +53,8 @@ cliary setup shell --shell fish --enable
 
 CLIary stores the executable name, timestamp, and a random local machine ID for each captured invocation. It never stores command arguments. Bash history settings may cause some commands to be skipped; compound commands are represented by their first external executable. The Shell hook runs recording in the background so database failures do not interrupt the original command.
 
+Zsh capture uses the actual alias-expanded executable supplied by its `preexec` hook: `gst` defined as `git status` counts toward `git`, while retaining `gst` as the entered name. Ordinary aliases and alias chains work without a list of plugin-specific shortcuts. Functions shadowing external tools are excluded. To update an existing installed hook after rebuilding, run `./target/debug/cliary setup shell --shell zsh --enable`, then open a new terminal. Bash/Fish live hooks retain their existing executable-only behavior.
+
 ### When history or statistics are empty
 
 Scanning installed tools does not enable usage capture. Run `cliary setup shell --enable` in your usual Shell, open a new terminal, run an external tool such as `git --version`, and refresh the Web page after the next command prompt. For a locally built binary outside `PATH`, replace `cliary` with its actual path. The History and Statistics pages provide these steps when there are no records.
@@ -71,13 +73,33 @@ cliary history --undated --json
 
 Use the actual file your Shell writes; custom `HISTFILE` / XDG paths may differ. CLIary reads only the selected regular file (UTF-8, up to 32 MiB; Zsh metafied bytes are decoded). No Shell is invoked. Preview shows counts, date range and up to 20 executable names; add `--apply` to commit in one transaction. Raw arguments, paths and command strings are never saved or shown.
 
-Bash `#epoch` timestamps, Zsh extended `: epoch:duration;command` and Fish `when` timestamps enter dated statistics. Plain history without timestamps goes into a separate **undated observations** list, never into a guessed year. Invalid/future timestamps, builtins, compound commands, pipelines, substitutions and multiline commands are skipped conservatively; known `sudo`, `env`, assignments and `command` prefixes are supported. Aliases/functions cannot be resolved from a history file and literal names may be unmatched.
+Bash `#epoch` timestamps, Zsh extended `: epoch:duration;command` and Fish `when` timestamps enter dated statistics. Plain history without timestamps goes into a separate **undated observations** list, never into a guessed year. Invalid/future timestamps, builtins, compound commands, pipelines, substitutions and multiline commands are skipped conservatively; known `sudo`, `env`, assignments and `command` prefixes are supported. A history file alone cannot establish alias/function definitions; literal names may be unmatched. An explicit alias snapshot can supply evidence for ordinary aliases as described below.
 
 Repeated import, copied files and overlapping live capture are deduplicated using this device's executable, second and occurrence number. Same-second repeats in one snapshot retain multiplicity; another snapshot retains the largest observed multiplicity, so indistinguishable same-second commands can be undercounted. Undated counts likewise keep the maximum snapshot count, rather than accumulating on each import. Files from another machine should not be mixed into this device's history. Fish and Shell history settings may merge, omit or trim entries: an imported entry is an observation, not proof of every execution.
 
 导入默认只预览；必须加 `--apply` 才保存。仅记录程序名、可靠时间与来源，不保存完整命令或参数。没有日期的记录可通过 `history --undated` 查看，不进入年报。已有数据库自动升级至 v2，保留记录、收藏和备注；旧版程序不能再打开升级后的数据库。
 
 Format references: [Bash manual](https://www.gnu.org/software/bash/manual/html_node/Bash-History-Facilities.html), [Zsh extended history](https://zsh.sourceforge.io/Doc/Release/Options.html), [Fish history format](https://github.com/fish-shell/fish-shell/blob/master/src/history/yaml_backend.rs).
+
+### Resolve aliases in old history / 解析历史中的别名
+
+Export aliases **in your usual interactive Shell**, where the plugins have already loaded:
+
+```sh
+cliary_aliases_file="$(mktemp)"   # Private temporary file
+builtin alias -L > "$cliary_aliases_file"  # Zsh; Bash: builtin alias -p
+./target/debug/cliary import-history --shell zsh --file "$HISTFILE" --aliases-file "$cliary_aliases_file"
+./target/debug/cliary import-history --shell zsh --file "$HISTFILE" --aliases-file "$cliary_aliases_file" --apply
+rm -- "$cliary_aliases_file"
+```
+
+`--aliases-file` accepts UTF-8 regular files up to 4 MiB containing Zsh `alias -L` or Bash `alias -p` output. It is parsed as data; nothing is sourced or executed. Preview adds executable-only mappings such as `gst → git` and a count of existing unmatched imported records to classify. Applying can classify matching dated imported records without appending duplicate entries or changing original executable names, timestamps or import keys. Already assigned tool IDs and live capture records are preserved. Statistics and annual reports group recognized aliases by the existing Catalog tool ID; `history gst` can still show that entered name. Targets absent from the Catalog remain unmatched.
+
+A current snapshot describes current definitions, not proof of an old configuration; choose a historical snapshot if an alias changed. Chains are bounded to 16 steps; cycles, builtins and complex expansions are skipped, and functions/global/suffix aliases are not inferred. Quoted, escaped, path-qualified or wrapper-argument calls do not expand aliases. A snapshot mixing these forms with plain calls of the same name conservatively leaves that name unmatched. Undated observations keep the entered name and remain outside all time statistics. Snapshot bodies and arguments are never saved in SQLite or emitted in previews; the temporary export itself may contain private alias values and should be removed after use. Reports remain at tool level, without separate `git status`/`git checkout` rankings.
+
+历史导入的别名表由你显式导出、预览和应用；程序不自动加载 `.zshrc` 或插件。`gst` 归到 `git` 后，旧导入记录的总条数不变；仅修正未识别记录的工具归属。没有日期的记录仍不进入年报。
+
+Mechanism references: [Zsh preexec arguments](https://zsh.sourceforge.io/Doc/Release/Functions.html), [Zsh alias export](https://zsh.sourceforge.io/Doc/Release/Shell-Builtin-Commands.html).
 
 ## Commands
 
@@ -136,9 +158,9 @@ The CLI lists longer package details, repository links and examples beneath the 
 
 XDG base directories and `CLIARY_CONFIG_DIR`, `CLIARY_DATA_DIR`, and `CLIARY_CACHE_DIR` are supported. A Catalog update replaces only `catalog.db`. Release builds have a built-in GitHub Catalog URL; source builds can use `cliary sync --url https://github.com/OWNER/REPO/releases/latest/download` or set `catalog_url` in `config.toml`.
 
-`history <tool>` matches saved tool IDs, exact captured executable names, and current Catalog aliases. If a Catalog entry is removed, its existing usage events remain queryable by the saved ID or executable name; `stats` retains those records instead of requiring the old entry. First-recorded dates come from usage events, so a Catalog update does not by itself make an existing tool newly used. Records and IDs are not rewritten or retroactively merged; categorization still uses current Catalog metadata when available.
+`history <tool>` matches saved tool IDs, exact captured executable names, and current Catalog aliases. If a Catalog entry is removed, its existing usage events remain queryable by the saved ID or executable name; `stats` retains those records instead of requiring the old entry. First-recorded dates come from usage events, so a Catalog update does not by itself make an existing tool newly used. Catalog updates do not rewrite saved records or IDs; an explicitly applied alias snapshot can classify previously unmatched imported records. Categorization still uses current Catalog metadata when available.
 
-Catalog 条目移除后，可用原工具 ID 或实际命令名查询已保存的历史，统计也会保留这些记录。首次使用按真实记录时间计算，不因工具库更新而重置；不会改写或自动合并旧记录。
+Catalog 条目移除后，可用原工具 ID 或实际命令名查询已保存的历史，统计也会保留这些记录。首次使用按真实记录时间计算，不因工具库更新而重置；Catalog 更新不会改写或自动合并旧记录。显式应用别名表可归类此前未识别的导入记录。
 
 ## Contribute Catalog entries
 

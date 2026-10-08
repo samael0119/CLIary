@@ -72,6 +72,9 @@ enum Command {
         shell: ImportShell,
         #[arg(long)]
         file: std::path::PathBuf,
+        /// Explicit Zsh `alias -L` or Bash `alias -p` snapshot; never executed.
+        #[arg(long)]
+        aliases_file: Option<std::path::PathBuf>,
         #[arg(long)]
         apply: bool,
     },
@@ -142,18 +145,29 @@ enum SetupCommand {
 }
 #[derive(Subcommand)]
 enum InternalCommand {
-    Record { executable: String },
+    Record {
+        executable: String,
+        #[arg(long)]
+        resolved_executable: Option<String>,
+    },
     SkipScan,
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
     if let Command::Internal {
-        command: InternalCommand::Record { executable },
+        command:
+            InternalCommand::Record {
+                executable,
+                resolved_executable,
+            },
     } = &args.command
     {
         if let Ok(core) = Cliary::open() {
-            let _ = core.record_usage(executable);
+            let _ = core.record_usage_resolved(
+                executable,
+                resolved_executable.as_deref().unwrap_or(executable),
+            );
         }
         return Ok(());
     }
@@ -868,13 +882,19 @@ fn main() -> Result<()> {
                 println!();
             }
         }
-        Command::ImportHistory { shell, file, apply } => {
+        Command::ImportHistory {
+            shell,
+            file,
+            apply,
+            aliases_file,
+        } => {
             let format = match shell {
                 ImportShell::Bash => cliary_core::HistoryFormat::Bash,
                 ImportShell::Zsh => cliary_core::HistoryFormat::Zsh,
                 ImportShell::Fish => cliary_core::HistoryFormat::Fish,
             };
-            let report = core.import_history(&file, format, apply)?;
+            let report =
+                core.import_history_with_aliases(&file, format, apply, aliases_file.as_deref())?;
             if args.json {
                 out(json!(report))?;
             } else {
@@ -923,12 +943,37 @@ fn main() -> Result<()> {
                     tr(&lang, "Sample tools", "工具预览"),
                     report.sample_tools.join(", ")
                 );
+                if aliases_file.is_some() {
+                    println!(
+                        "{}: {}",
+                        tr(
+                            &lang,
+                            "Alias → executable (snapshot evidence)",
+                            "别名 → 程序（别名表依据）"
+                        ),
+                        report
+                            .alias_resolutions
+                            .iter()
+                            .map(|a| format!("{} → {}", a.alias, a.executable))
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    );
+                    println!(
+                        "{}: {}",
+                        tr(
+                            &lang,
+                            "Existing unmatched imported records to classify",
+                            "此次归类的已有未识别导入记录"
+                        ),
+                        report.reclassified_records
+                    );
+                }
                 println!(
                     "{}",
                     tr(
                         &lang,
-                        "No arguments saved. Undated observations are excluded from annual statistics. Shell history may omit executions; aliases and compound commands cannot be reconstructed.",
-                        "不保存参数，无日期记录不进入年度统计。Shell 历史可能遗漏调用；不会还原别名或复合命令。"
+                        "No arguments saved. Undated observations are excluded from annual statistics. Alias snapshots describe selected definitions, not proven past configuration; compound commands and functions are not reconstructed.",
+                        "不保存参数，无日期记录不进入年度统计。别名表只代表选定的定义，不能证明过去配置；不会还原复合命令或函数。"
                     )
                 );
                 if !apply {

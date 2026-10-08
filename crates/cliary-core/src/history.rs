@@ -28,7 +28,7 @@ pub struct CountItem {
     pub count: u64,
 }
 
-/// A local-calendar year, based only on captured invocations (never arguments).
+/// A local-calendar year of retained dated records (never arguments).
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Wrapped {
     pub year: i32,
@@ -112,25 +112,18 @@ impl Cliary {
     }
 
     pub fn record_usage(&self, executable: &str) -> Result<()> {
-        if executable
-            .chars()
-            .any(|c| c.is_whitespace() || c.is_control())
-        {
-            bail!("invalid executable name");
-        }
-        let executable = executable.rsplit('/').next().unwrap_or(executable);
-        if executable.is_empty()
-            || executable.len() > 128
-            || !executable
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric() || "_.+-".contains(c))
-        {
-            bail!("invalid executable name");
-        }
-        if executable == "cliary" {
+        self.record_usage_resolved(executable, executable)
+    }
+
+    /// Shell supplies its actual expanded executable; keep the entered name for provenance.
+    /// This API accepts names only, never a command line or alias expansion body.
+    pub fn record_usage_resolved(&self, executable: &str, resolved_executable: &str) -> Result<()> {
+        let resolved = executable_name(resolved_executable)?;
+        let executable = executable_name(executable)?;
+        if executable == "cliary" || resolved == "cliary" {
             return Ok(());
         }
-        let tool_id = self.tool_for_executable(executable)?.map(|x| x.id);
+        let tool_id = self.tool_for_executable(resolved)?.map(|x| x.id);
         let db = self.user_db()?;
         db.execute("INSERT INTO usage_events(executable,tool_id,timestamp,machine_id) VALUES (?1,?2,?3,?4)",
             params![executable, tool_id, chrono::Utc::now().timestamp(), self.machine_id()?])?;
@@ -287,4 +280,20 @@ fn sorted_counts(map: HashMap<String, u64>) -> Vec<CountItem> {
         .collect::<Vec<_>>();
     values.sort_by(|a, b| b.count.cmp(&a.count).then(a.name.cmp(&b.name)));
     values
+}
+
+fn executable_name(value: &str) -> Result<&str> {
+    if value.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        bail!("invalid executable name");
+    }
+    let name = value.rsplit('/').next().unwrap_or(value);
+    if name.is_empty()
+        || name.len() > 128
+        || !name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || "_.+-".contains(c))
+    {
+        bail!("invalid executable name");
+    }
+    Ok(name)
 }

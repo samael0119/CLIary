@@ -17,3 +17,6 @@ cliary-core = { path = "../cliary-core" }
 cliary-web = { path = "../cliary-web" }
 shell-words = "1"
 dirs = "5"
+
+[dev-dependencies]
+tempfile = "3"

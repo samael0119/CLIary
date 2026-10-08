@@ -3,6 +3,7 @@ mod history;
 mod history_import;
 mod installed;
 mod paths;
+mod shell_alias;
 mod sync;
 mod user;
 mod wrapped_insights;
@@ -17,6 +18,7 @@ pub use history::{CountItem, HistorySummary, Stats, UsageEvent, Wrapped};
 pub use history_import::{HistoryFormat, ImportReport, UndatedTool};
 pub use installed::InstalledTool;
 pub use paths::Paths;
+pub use shell_alias::AliasResolution;
 pub use user::FavoriteEntry;
 pub use wrapped_insights::{
     FavoriteInsight, NewToolInsight, ToolChange, WrappedInsights, YearComparison,

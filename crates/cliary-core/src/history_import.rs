@@ -1,5 +1,6 @@
 //! Conservative, opt-in import. Raw commands never leave the parser or reach SQLite.
 use crate::Cliary;
+use crate::shell_alias::{AliasSnapshot, Resolution};
 use anyhow::{Context, Result, bail};
 use rusqlite::{OptionalExtension, params};
 use serde::{Deserialize, Serialize};
@@ -41,11 +42,19 @@ pub struct ImportReport {
     pub last_timestamp: Option<i64>,
     /// Executable-only preview, capped at 20. Never raw commands or paths.
     pub sample_tools: Vec<String>,
+    /// Only the alias and executable, never the expansion's arguments.
+    #[serde(default)]
+    pub alias_resolutions: Vec<crate::AliasResolution>,
+    /// Existing unmatched imported records classified by this explicit snapshot.
+    #[serde(default)]
+    pub reclassified_records: u64,
 }
 struct Parsed {
     timed: BTreeMap<(String, i64), u64>,
     undated: BTreeMap<String, u64>,
     report: ImportReport,
+    resolved: BTreeMap<String, String>,
+    unexpanded: std::collections::BTreeSet<String>,
 }
 
 impl Cliary {
@@ -56,6 +65,21 @@ impl Cliary {
         format: HistoryFormat,
         apply: bool,
     ) -> Result<ImportReport> {
+        self.import_history_with_aliases(path, format, apply, None)
+    }
+
+    /// Alias definitions are an explicit user-selected snapshot, not a guess about old configuration.
+    pub fn import_history_with_aliases(
+        &self,
+        path: &Path,
+        format: HistoryFormat,
+        apply: bool,
+        aliases_file: Option<&Path>,
+    ) -> Result<ImportReport> {
+        let aliases = aliases_file
+            .map(AliasSnapshot::read)
+            .transpose()?
+            .unwrap_or_default();
         if !std::fs::metadata(path)
             .context("cannot inspect selected history file")?
             .is_file()
@@ -86,7 +110,7 @@ impl Cliary {
         }
         let text = std::str::from_utf8(&bytes)
             .context("history must be UTF-8; export a UTF-8 copy first")?;
-        let mut parsed = parse(text, format);
+        let mut parsed = parse(text, format, &aliases);
         let mut db = self.user_db()?;
         let tx = db.transaction_with_behavior(if apply {
             rusqlite::TransactionBehavior::Immediate
@@ -126,6 +150,17 @@ impl Cliary {
             }
         }
         for ((executable, timestamp), count) in &parsed.timed {
+            let target = parsed.resolved.get(executable).unwrap_or(executable);
+            let tool_id = ids.get(target);
+            if target != executable
+                && let Some(id) = tool_id
+            {
+                let reclassified: u64 = tx.query_row("SELECT COUNT(*) FROM usage_events WHERE executable=?1 AND timestamp=?2 AND machine_id=?3 AND source<>'capture' AND tool_id IS NULL", params![executable,timestamp,machine], |r| r.get(0))?;
+                parsed.report.reclassified_records += reclassified;
+                if apply {
+                    tx.execute("UPDATE usage_events SET tool_id=?1 WHERE executable=?2 AND timestamp=?3 AND machine_id=?4 AND source<>'capture' AND tool_id IS NULL", params![id,executable,timestamp,machine])?;
+                }
+            }
             // Count only live records here; imported multiplicity is tracked by keys.
             let live: u64 = tx.query_row("SELECT COUNT(*) FROM usage_events WHERE executable=?1 AND timestamp=?2 AND machine_id=?3 AND source='capture'", params![executable,timestamp,machine], |r| r.get(0))?;
             for ordinal in 0..*count {
@@ -147,7 +182,7 @@ impl Cliary {
                         "INSERT INTO history_import_keys VALUES (?1,?2)",
                         params![key, format.source()],
                     )?;
-                    tx.execute("INSERT INTO usage_events(executable,tool_id,timestamp,machine_id,source) VALUES (?1,?2,?3,?4,?5)", params![executable,ids.get(executable),timestamp,machine,format.source()])?;
+                    tx.execute("INSERT INTO usage_events(executable,tool_id,timestamp,machine_id,source) VALUES (?1,?2,?3,?4,?5)", params![executable,tool_id,timestamp,machine,format.source()])?;
                 }
             }
         }
@@ -179,11 +214,13 @@ impl Cliary {
             .collect::<rusqlite::Result<Vec<_>>>()?)
     }
 }
-fn parse(text: &str, format: HistoryFormat) -> Parsed {
+fn parse(text: &str, format: HistoryFormat, aliases: &AliasSnapshot) -> Parsed {
     let mut parsed = Parsed {
         timed: BTreeMap::new(),
         undated: BTreeMap::new(),
         report: ImportReport::default(),
+        resolved: BTreeMap::new(),
+        unexpanded: std::collections::BTreeSet::new(),
     };
     let mut pending: Option<(String, Option<i64>)> = None;
     let timestamped_bash = matches!(format, HistoryFormat::Bash)
@@ -194,7 +231,7 @@ fn parse(text: &str, format: HistoryFormat) -> Parsed {
         match format {
             HistoryFormat::Fish => {
                 if let Some(command) = line.strip_prefix("- cmd: ") {
-                    flush(&mut parsed, pending.take());
+                    flush(&mut parsed, pending.take(), aliases);
                     // Fish's YAML-like escaping represents newlines and backslashes only.
                     pending = Some((unescape_fish(command), None));
                 } else if let Some(when) = line.strip_prefix("  when: ")
@@ -208,7 +245,7 @@ fn parse(text: &str, format: HistoryFormat) -> Parsed {
                     .strip_prefix('#')
                     .filter(|s| !s.is_empty() && s.chars().all(|c| c.is_ascii_digit()))
                 {
-                    flush(&mut parsed, pending.take());
+                    flush(&mut parsed, pending.take(), aliases);
                     pending = Some((String::new(), Some(stamp.parse().unwrap_or(i64::MIN))));
                 } else if let Some((command, _)) = pending.as_mut() {
                     if !command.is_empty() {
@@ -216,7 +253,7 @@ fn parse(text: &str, format: HistoryFormat) -> Parsed {
                     }
                     command.push_str(line);
                 } else {
-                    flush(&mut parsed, Some((line.into(), None)));
+                    flush(&mut parsed, Some((line.into(), None)), aliases);
                 }
             }
             HistoryFormat::Zsh => {
@@ -225,7 +262,7 @@ fn parse(text: &str, format: HistoryFormat) -> Parsed {
                     command.push('\n');
                     command.push_str(line);
                     if !line.ends_with('\\') {
-                        flush(&mut parsed, pending.take());
+                        flush(&mut parsed, pending.take(), aliases);
                     }
                     continue;
                 }
@@ -251,13 +288,27 @@ fn parse(text: &str, format: HistoryFormat) -> Parsed {
                 if line.ends_with('\\') {
                     pending = Some(record);
                 } else {
-                    flush(&mut parsed, Some(record));
+                    flush(&mut parsed, Some(record), aliases);
                 }
             }
-            _ => flush(&mut parsed, Some((line.into(), None))),
+            _ => flush(&mut parsed, Some((line.into(), None)), aliases),
         }
     }
-    flush(&mut parsed, pending);
+    flush(&mut parsed, pending, aliases);
+    // A mixed snapshot containing quoted/explicit calls is not evidence that every
+    // occurrence of that name was an alias. Keep its original classification.
+    for name in &parsed.unexpanded {
+        parsed.resolved.remove(name);
+    }
+    parsed.report.alias_resolutions = parsed
+        .resolved
+        .iter()
+        .take(20)
+        .map(|(alias, executable)| crate::AliasResolution {
+            alias: alias.clone(),
+            executable: executable.clone(),
+        })
+        .collect();
     parsed.report.sample_tools = parsed
         .timed
         .keys()
@@ -269,7 +320,7 @@ fn parse(text: &str, format: HistoryFormat) -> Parsed {
         .collect();
     parsed
 }
-fn flush(parsed: &mut Parsed, record: Option<(String, Option<i64>)>) {
+fn flush(parsed: &mut Parsed, record: Option<(String, Option<i64>)>, aliases: &AliasSnapshot) {
     let Some((command, timestamp)) = record else {
         return;
     };
@@ -281,6 +332,18 @@ fn flush(parsed: &mut Parsed, record: Option<(String, Option<i64>)>) {
         parsed.report.skipped += 1;
         return;
     };
+    match aliases.resolve(&command, &executable) {
+        Resolution::Resolved(target) => {
+            parsed.resolved.insert(executable.clone(), target);
+        }
+        Resolution::Unchanged => {
+            parsed.unexpanded.insert(executable.clone());
+        }
+        Resolution::Unsupported => {
+            parsed.report.skipped += 1;
+            return;
+        }
+    }
     if let Some(timestamp) = timestamp {
         if timestamp <= 0
             || timestamp > chrono::Utc::now().timestamp()
@@ -329,7 +392,7 @@ fn unescape_fish(text: &str) -> String {
     out
 }
 /// Do not guess executions inside pipelines, substitutions, compound or multiline commands.
-fn first_executable(command: &str) -> Option<String> {
+pub(crate) fn first_executable(command: &str) -> Option<String> {
     if command.chars().any(|c| "\n\r\0;|&<>`()".contains(c)) {
         return None;
     }
@@ -341,7 +404,8 @@ fn first_executable(command: &str) -> Option<String> {
     loop {
         let word = words.get(i)?;
         match word.as_str() {
-            "command" | "builtin" => {
+            "builtin" => return None,
+            "command" => {
                 i += 1;
                 if words.get(i).is_some_and(|w| w == "--") {
                     i += 1;

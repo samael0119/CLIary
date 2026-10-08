@@ -141,4 +141,66 @@ mod tests {
         );
         assert!(remove_block(BEGIN).is_err());
     }
+
+    #[cfg(unix)]
+    #[test]
+    fn zsh_hook_uses_expanded_executable_without_passing_arguments_or_functions() {
+        use std::{os::unix::fs::PermissionsExt, process::Command};
+        if Command::new("zsh").arg("--version").output().is_err() {
+            eprintln!("Zsh not available; hook integration test not exercised");
+            return;
+        }
+        let root = tempfile::tempdir().unwrap();
+        let recorder = root.path().join("fake recorder");
+        let log = root.path().join("recorded");
+        fs::write(
+            &recorder,
+            "#!/bin/sh\nprintf '%s\\n' \"$*\" >> \"$CLIARY_TEST_LOG\"\n",
+        )
+        .unwrap();
+        fs::set_permissions(&recorder, fs::Permissions::from_mode(0o700)).unwrap();
+        let hook = root.path().join("hook");
+        fs::write(
+            &hook,
+            include_str!("../shell/zsh.sh").replace(
+                "@CLIARY_BIN@",
+                &format!("'{}'", shell_quote(&recorder.to_string_lossy())),
+            ),
+        )
+        .unwrap();
+        let script = format!(
+            "source '{}'\n__cliary_zsh_preexec 'gst SECRET' 'git status SECRET' 'git status SECRET'\n__cliary_zsh_preexec 'gco SECRET' 'git checkout SECRET' 'git checkout SECRET'\n__cliary_zsh_preexec 'print SECRET' 'print SECRET' 'print SECRET'\ngit() {{ :; }}\n__cliary_zsh_preexec 'gst SECRET' 'git status SECRET' 'git status SECRET'\n",
+            shell_quote(&hook.to_string_lossy())
+        );
+        let result = Command::new("zsh")
+            .args(["-f", "-c", &script])
+            .env("CLIARY_TEST_LOG", &log)
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success(),
+            "{}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+        let mut lines = Vec::new();
+        for _ in 0..100 {
+            lines = fs::read_to_string(&log)
+                .unwrap_or_default()
+                .lines()
+                .map(str::to_owned)
+                .collect();
+            if lines.len() >= 2 {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+        lines.sort();
+        assert_eq!(
+            lines,
+            vec![
+                "internal record gco --resolved-executable git",
+                "internal record gst --resolved-executable git"
+            ]
+        );
+    }
 }

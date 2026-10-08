@@ -231,3 +231,138 @@ fn metafied_zsh_bytes_decode_and_failed_input_leaves_records_untouched() {
     );
     assert_eq!(core.history(None).unwrap().runs, 1);
 }
+
+#[test]
+fn explicit_alias_snapshot_previews_and_repairs_imported_identity_without_new_events() {
+    let (root, core) = app();
+    let path = file(
+        root.path(),
+        ": 1704067200:0;gst SECRET_ARG\n: 1704067200:0;gst OTHER_SECRET\n: 1704153600:0;gco -b secret-branch\n: 1704240000:0;ll /SECRET_PATH\n",
+    );
+    assert_eq!(
+        core.import_history(&path, HistoryFormat::Zsh, true)
+            .unwrap()
+            .new_timed,
+        4
+    );
+    assert_eq!(core.history(Some("git")).unwrap().runs, 0);
+    let aliases = root.path().join("aliases");
+    std::fs::write(
+        &aliases,
+        "alias gst='g status'\nalias g='git'\nalias gco='git checkout'\nalias ll='ls -la'\n",
+    )
+    .unwrap();
+    let preview = core
+        .import_history_with_aliases(&path, HistoryFormat::Zsh, false, Some(&aliases))
+        .unwrap();
+    assert_eq!(
+        (
+            preview.new_timed,
+            preview.duplicates,
+            preview.reclassified_records
+        ),
+        (0, 4, 4)
+    );
+    assert_eq!(
+        preview
+            .alias_resolutions
+            .iter()
+            .find(|a| a.alias == "gst")
+            .unwrap()
+            .executable,
+        "git"
+    );
+    assert_eq!(core.history(Some("git")).unwrap().runs, 0);
+    let encoded = serde_json::to_string(&preview).unwrap();
+    assert!(!encoded.contains("SECRET"));
+    assert!(!encoded.contains("checkout"));
+    assert!(!encoded.contains("status"));
+    let applied = core
+        .import_history_with_aliases(&path, HistoryFormat::Zsh, true, Some(&aliases))
+        .unwrap();
+    assert_eq!((applied.new_timed, applied.reclassified_records), (0, 4));
+    assert_eq!(core.history(None).unwrap().runs, 4);
+    assert_eq!(core.history(Some("git")).unwrap().runs, 3);
+    assert_eq!(core.history(Some("gst")).unwrap().runs, 2);
+    let report = core.wrapped(Some(2024)).unwrap();
+    assert_eq!(report.tools_used, 2);
+    assert_eq!(
+        (&*report.top_tools[0].name, report.top_tools[0].count),
+        ("git", 3)
+    );
+    let repeat = core
+        .import_history_with_aliases(&path, HistoryFormat::Zsh, true, Some(&aliases))
+        .unwrap();
+    assert_eq!((repeat.new_timed, repeat.reclassified_records), (0, 0));
+    // Import keys use the original name: returning to an unexpanded import does not duplicate.
+    assert_eq!(
+        core.import_history(&path, HistoryFormat::Zsh, true)
+            .unwrap()
+            .new_timed,
+        0
+    );
+    // A changed snapshot cannot reinterpret an already established persisted identity.
+    std::fs::write(&aliases, "alias gst='jq .'\n").unwrap();
+    assert_eq!(
+        core.import_history_with_aliases(&path, HistoryFormat::Zsh, true, Some(&aliases))
+            .unwrap()
+            .reclassified_records,
+        0
+    );
+    assert_eq!(core.history(Some("git")).unwrap().runs, 3);
+}
+
+#[test]
+fn fresh_alias_import_skips_unsafe_definitions_and_respects_quoted_and_wrapped_calls() {
+    let (root, core) = app();
+    let path = file(
+        root.path(),
+        ": 1704067200:0;gst\n: 1704067201:0;gco\n: 1704067202:0;ll\n: 1704067203:0;unsafe\n: 1704067204:0;loop\n: 1704067205:0;fn\n: 1704067206:0;command gco\n: 1704067207:0;'gco'\n",
+    );
+    let aliases = root.path().join("aliases");
+    std::fs::write(&aliases,"alias gst='git status'\nalias gco='git checkout'\nalias ll='ls -la'\nalias unsafe='git $(touch /MUST_NOT_EXIST)'\nalias loop='other'\nalias other='loop'\nfn() { git status; }\n").unwrap();
+    let r = core
+        .import_history_with_aliases(&path, HistoryFormat::Zsh, true, Some(&aliases))
+        .unwrap();
+    assert_eq!((r.timed, r.skipped, r.new_timed), (6, 2, 6));
+    // The mixed gco name stays unmatched rather than assuming every entry expanded.
+    assert_eq!(core.history(Some("git")).unwrap().runs, 1);
+    assert_eq!(core.history(Some("ls")).unwrap().runs, 1);
+    assert_eq!(core.history(Some("gco")).unwrap().runs, 3);
+    assert_eq!(core.history(Some("fn")).unwrap().runs, 1);
+    assert!(!r.alias_resolutions.iter().any(|a| a.alias == "gco"));
+    assert!(
+        core.import_history_with_aliases(&path, HistoryFormat::Zsh, true, Some(root.path()))
+            .is_err()
+    );
+    assert_eq!(core.history(None).unwrap().runs, 6);
+}
+
+#[test]
+fn resolved_live_names_merge_tools_keep_provenance_and_reject_command_bodies() {
+    let (_root, core) = app();
+    core.record_usage_resolved("gst", "git").unwrap();
+    core.record_usage_resolved("gco", "/usr/bin/git").unwrap();
+    core.record_usage("git").unwrap();
+    core.record_usage_resolved("cy", "cliary").unwrap();
+    assert!(core.record_usage_resolved("gst", "git status").is_err());
+    assert!(core.record_usage_resolved("gst", "git;touch").is_err());
+    assert_eq!(core.history(Some("git")).unwrap().runs, 3);
+    assert_eq!(core.history(Some("gst")).unwrap().runs, 1);
+    let stats = core.stats(None, None).unwrap();
+    assert_eq!((stats.total_runs, stats.tools_used), (3, 1));
+    assert_eq!(
+        (&*stats.top_tools[0].name, stats.top_tools[0].count),
+        ("git", 3)
+    );
+    let db = Connection::open(&core.paths.user_db).unwrap();
+    assert_eq!(
+        db.query_row::<String, _, _>(
+            "SELECT executable FROM usage_events ORDER BY id LIMIT 1",
+            [],
+            |r| r.get(0)
+        )
+        .unwrap(),
+        "gst"
+    );
+}
