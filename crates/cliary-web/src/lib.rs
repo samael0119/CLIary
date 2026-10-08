@@ -1100,9 +1100,92 @@ async fn compare(State(app): State<App>, Query(query): Query<CompareQuery>) -> W
     page(&app, "Compare", body)
 }
 
+fn usage_empty_state(lang: &str, route: &str, last_used: Option<&str>) -> String {
+    if let Some(last_used) = last_used {
+        return format!(
+            "<section class='panel usage-guide'><h2>{}</h2><p>{}</p><p>{}: <time>{}</time></p><a class='btn btn-outline' href='/history'>{}</a></section>",
+            tr(lang, "No activity in the last 30 days", "近 30 天暂无活动"),
+            tr(
+                lang,
+                "Earlier records are still available in Usage History. This view only includes the last 30 days.",
+                "早期记录仍保留在使用历史中，此页面仅统计近 30 天。"
+            ),
+            tr(lang, "Last recorded activity", "最近一次记录"),
+            esc(last_used),
+            tr(lang, "View usage history", "查看使用历史")
+        );
+    }
+    format!(
+        "<section class='panel usage-guide'><h2>{}</h2><p>{}</p><ol class='usage-steps'><li><strong>{}</strong><p>{}</p><pre><code>cliary setup shell --enable</code></pre><details><summary>{}</summary><pre><code>cliary setup shell --shell bash --enable\ncliary setup shell --shell zsh --enable\ncliary setup shell --shell fish --enable</code></pre></details></li><li><strong>{}</strong><p>{}</p></li><li><strong>{}</strong><p>{}</p></li></ol><a class='btn btn-primary' href='{}'>{}</a><p class='usage-privacy'>{}</p><details class='usage-help'><summary>{}</summary><p>{}</p><p>{}</p><pre><code>cliary history\ncliary setup shell --disable</code></pre></details></section>",
+        tr(lang, "Start your usage diary", "开始记录工具使用"),
+        tr(
+            lang,
+            "No usage has been recorded in this workspace. Scanning finds installed tools; recording usage requires optional Shell integration.",
+            "此工作区尚无使用记录。扫描用于发现已安装工具；使用历史需要另外启用可选的 Shell 集成。"
+        ),
+        tr(lang, "Enable recording in your terminal", "在终端启用采集"),
+        tr(
+            lang,
+            "Run this command in the Shell you use. Bash, Zsh and Fish are supported.",
+            "在你使用的 Shell 中执行以下命令，支持 Bash、Zsh 和 Fish。"
+        ),
+        tr(lang, "Choose a Shell explicitly", "手动指定 Shell"),
+        tr(lang, "Open a new terminal", "打开一个新终端"),
+        tr(
+            lang,
+            "The hook takes effect in new Shell sessions. Existing terminals need to reload their Shell configuration.",
+            "采集脚本在新的 Shell 会话中生效；已有终端需要重新加载 Shell 配置。"
+        ),
+        tr(lang, "Use a tool, then refresh", "使用工具后刷新页面"),
+        tr(
+            lang,
+            "Run an external command such as git --version, then wait for the next prompt. Recording happens in the background.",
+            "运行外部命令，例如 git --version，等待下一个命令提示符后再刷新。记录会在后台写入。"
+        ),
+        esc(route),
+        tr(lang, "Refresh records", "刷新记录"),
+        tr(
+            lang,
+            "Only executable names, timestamps and a local machine ID are stored. Command arguments are never saved; existing Shell history is not imported.",
+            "仅保存可执行文件名、时间和本机标识，不保存命令参数，也不导入已有 Shell 历史。"
+        ),
+        tr(
+            lang,
+            "Already enabled, but still empty?",
+            "已启用，仍然没有记录？"
+        ),
+        tr(
+            lang,
+            "If cliary is not in PATH, replace it with your binary's path (for a local build: ./target/debug/cliary). Check that the terminal and Web UI use the same data directory, including any CLIARY_DATA_DIR or XDG_DATA_HOME override.",
+            "若 cliary 不在 PATH 中，请替换为实际程序路径（本地构建可用 ./target/debug/cliary）。检查终端与 Web 页面使用相同的数据目录，包括 CLIARY_DATA_DIR 或 XDG_DATA_HOME 设置。"
+        ),
+        tr(
+            lang,
+            "Check records from the terminal. Bash history settings can skip some commands. To stop collecting new records, disable the hook and open a new terminal; saved records remain.",
+            "可在终端检查记录；Bash 的历史设置可能跳过部分命令。若要停止采集新记录，禁用集成后打开新终端；已保存的记录会保留。"
+        )
+    )
+}
+
 async fn history(State(app): State<App>) -> WebResult {
     let lang = app.core.locale(None).map_err(error)?;
     let summary = app.core.history(None).map_err(error)?;
+    if summary.runs == 0 {
+        return page(
+            &app,
+            "History",
+            format!(
+                "<section class='page-intro'><h1>{}</h1><p>{}</p></section>{}",
+                tr(&lang, "Usage History", "使用历史"),
+                tr(
+                    &lang,
+                    "See the tools you use and how your habits evolve.",
+                    "了解常用工具，积累真实的使用轨迹。"
+                ),
+                usage_empty_state(&lang, "/history", None)
+            ),
+        );
+    }
     let stats = app.core.stats(None, None).map_err(error)?;
     let mut body = format!(
         "<section class='page-intro'><span class='eyebrow'>{}</span><h1>{}</h1><p>{}</p></section><div class='cards grid-4'><div><div class='card-top'><span class='card-icon'>⚡</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-1'>◷</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-2'>⌘</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-3'>🕒</span></div><strong>{}</strong><span>{}</span></div></div><div class='dashboard-grid'><section class='panel'><div class='panel-heading'><div><span class='eyebrow'>{}</span><h2>{}</h2></div></div><div class='rank-list'>",
@@ -1136,9 +1219,6 @@ async fn history(State(app): State<App>) -> WebResult {
             item.count
         ).unwrap();
     }
-    if stats.top_tools.is_empty() {
-        write!(body, "<div class='empty-inline'><span class='empty-icon'>⌁</span><strong>{}</strong><p>{}</p></div>", tr(&lang, "No usage recorded yet", "暂无使用记录"), tr(&lang, "Run tools in your terminal to record usage here.", "在终端中运行命令行工具即可自动记录。")).unwrap();
-    }
     write!(
         body,
         "</div></section><section class='panel'><div class='panel-heading'><div><span class='eyebrow'>{}</span><h2>{}</h2></div></div><div class='recent-list'>",
@@ -1169,6 +1249,23 @@ async fn history(State(app): State<App>) -> WebResult {
 async fn stats(State(app): State<App>) -> WebResult {
     let lang = app.core.locale(None).map_err(error)?;
     let stats = app.core.stats(Some(30), None).map_err(error)?;
+    if stats.total_runs == 0 {
+        let summary = app.core.history(None).map_err(error)?;
+        return page(
+            &app,
+            "Statistics",
+            format!(
+                "<section class='page-intro'><h1>{}</h1><p>{}</p></section>{}",
+                tr(&lang, "Statistics · 30 days", "使用统计 · 近 30 天"),
+                tr(
+                    &lang,
+                    "Trends based on the tools you actually use.",
+                    "基于真实工具使用记录，了解活动趋势。"
+                ),
+                usage_empty_state(&lang, "/stats", summary.last_used.as_deref())
+            ),
+        );
+    }
     let mut body = format!(
         "<section class='page-intro'><span class='eyebrow'>{}</span><h1>{}</h1><p>{}</p></section><div class='cards grid-3'><div><div class='card-top'><span class='card-icon'>⚡</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-1'>◷</span></div><strong>{}</strong><span>{}</span></div><div><div class='card-top'><span class='card-icon color-2'>✦</span></div><strong>{}</strong><span>{}</span></div></div>",
         tr(&lang, "DEEP INSIGHTS", "深度洞察"),
@@ -1280,4 +1377,92 @@ async fn set_language(
     check(&app, &form.csrf)?;
     app.core.set_language(&form.language).map_err(error)?;
     Ok(Redirect::to("/"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cliary_core::Paths;
+
+    fn app(lang: &str) -> (tempfile::TempDir, App) {
+        let root = tempfile::tempdir().unwrap();
+        let core = Cliary::at(Paths::new(
+            root.path().join("config"),
+            root.path().join("data"),
+            root.path().join("cache"),
+        ))
+        .unwrap();
+        core.set_language(lang).unwrap();
+        (
+            root,
+            App {
+                core: Arc::new(core),
+                csrf: "test-token".into(),
+            },
+        )
+    }
+
+    #[tokio::test]
+    async fn empty_usage_pages_explain_activation_in_both_languages() {
+        for lang in ["en", "zh-CN"] {
+            let (_root, app) = app(lang);
+            for (route, html) in [
+                ("/history", history(State(app.clone())).await.unwrap().0),
+                ("/stats", stats(State(app.clone())).await.unwrap().0),
+            ] {
+                assert!(html.contains("cliary setup shell --enable"));
+                for shell in ["bash", "zsh", "fish"] {
+                    assert!(html.contains(&format!("--shell {shell} --enable")));
+                }
+                assert!(html.contains(&format!("href='{route}'")));
+                assert!(html.contains("CLIARY_DATA_DIR"));
+                assert!(html.contains("cliary setup shell --disable"));
+                assert!(!html.contains("在终端中运行命令行工具即可自动记录"));
+                assert!(!html.contains("Run tools in your terminal to record usage here."));
+                assert!(html.contains(tr(
+                    lang,
+                    "Command arguments are never saved",
+                    "不保存命令参数"
+                )));
+                assert!(html.contains(tr(lang, "Open a new terminal", "打开一个新终端")));
+            }
+            // Viewing guidance must not enable capture or create fabricated events.
+            assert_eq!(app.core.history(None).unwrap().runs, 0);
+            assert!(!app.core.paths.config_dir.join("shell").exists());
+        }
+    }
+
+    #[tokio::test]
+    async fn existing_usage_keeps_real_history_and_charts() {
+        let (_root, app) = app("zh-CN");
+        app.core.record_usage("my-test-tool").unwrap();
+        let history = history(State(app.clone())).await.unwrap().0;
+        let stats = stats(State(app)).await.unwrap().0;
+        assert!(history.contains("my-test-tool"));
+        assert!(stats.contains("chart-row"));
+        assert!(!history.contains("usage-steps"));
+        assert!(!stats.contains("usage-steps"));
+    }
+
+    #[tokio::test]
+    async fn older_usage_is_not_mistaken_for_missing_capture() {
+        for lang in ["en", "zh-CN"] {
+            let (_root, app) = app(lang);
+            app.core.record_usage("my-old-tool").unwrap();
+            let db = rusqlite::Connection::open(&app.core.paths.user_db).unwrap();
+            db.execute("UPDATE usage_events SET timestamp=946684800", [])
+                .unwrap();
+            let html = stats(State(app.clone())).await.unwrap().0;
+            assert!(html.contains(tr(
+                lang,
+                "No activity in the last 30 days",
+                "近 30 天暂无活动"
+            )));
+            assert!(html.contains("href='/history'"));
+            let last_used = app.core.history(None).unwrap().last_used.unwrap();
+            assert!(html.contains(&last_used));
+            assert!(!html.contains("cliary setup shell --enable"));
+            assert!(history(State(app)).await.unwrap().0.contains("my-old-tool"));
+        }
+    }
 }
