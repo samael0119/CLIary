@@ -10,6 +10,7 @@ categories:
 tags:
 - interactive
 - remote
+- key-value
 platforms:
 - linux
 - macos
@@ -21,3 +22,15 @@ install:
   brew:
     package: redis
     command: brew install redis
+keywords:
+  en:
+  - redis
+  - key value
+  - database client
+  - database connection
+  zh-CN:
+  - Redis
+  - 键值
+  - 数据库客户端
+  - 数据库连接
+  - 连接数据库

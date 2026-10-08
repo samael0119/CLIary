@@ -10,6 +10,7 @@ categories:
 tags:
 - interactive
 - remote
+- http-client
 platforms:
 - linux
 - macos
@@ -29,3 +30,14 @@ install:
   snap:
     package: httpie
     command: snap install httpie
+keywords:
+  en:
+  - http request
+  - api testing
+  - http client
+  - json request
+  zh-CN:
+  - HTTP 请求
+  - 测试接口
+  - 接口
+  - 请求 JSON

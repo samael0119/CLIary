@@ -9,6 +9,7 @@ categories:
 - database
 tags:
 - interactive
+- sql
 platforms:
 - linux
 - macos
@@ -20,3 +21,15 @@ install:
   brew:
     package: sqlite
     command: brew install sqlite
+keywords:
+  en:
+  - sqlite
+  - sql query
+  - database file
+  - embedded database
+  zh-CN:
+  - SQLite
+  - SQL
+  - 数据库文件
+  - 数据库查询
+  - 执行 SQL

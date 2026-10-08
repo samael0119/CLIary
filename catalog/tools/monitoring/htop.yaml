@@ -11,6 +11,7 @@ tags:
 - tui
 - process
 - interactive
+- system-monitor
 platforms:
 - linux
 - macos
@@ -27,3 +28,17 @@ install:
   brew:
     package: htop
     command: brew install htop
+keywords:
+  en:
+  - cpu usage
+  - memory usage
+  - monitor processes
+  - system load
+  - interactive process viewer
+  zh-CN:
+  - CPU
+  - 内存
+  - 进程
+  - 系统负载
+  - 资源监控
+  - 交互式

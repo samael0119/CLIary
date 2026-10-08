@@ -30,3 +30,115 @@
   name: {en: Remote, zh-CN: 远程}
 - id: editor
   name: {en: Editor, zh-CN: 编辑器}
+- id: disk-usage
+  name:
+    en: Disk usage
+    zh-CN: 磁盘占用
+- id: directory-listing
+  name:
+    en: Directory listing
+    zh-CN: 目录列表
+- id: file-search
+  name:
+    en: File search
+    zh-CN: 文件查找
+- id: text-search
+  name:
+    en: Text search
+    zh-CN: 内容搜索
+- id: fuzzy-search
+  name:
+    en: Fuzzy search
+    zh-CN: 模糊查找
+- id: version-control
+  name:
+    en: Version control
+    zh-CN: 版本控制
+- id: git-history
+  name:
+    en: Git history
+    zh-CN: 提交历史
+- id: git-diff
+  name:
+    en: Git diff
+    zh-CN: 代码差异
+- id: git-hosting
+  name:
+    en: Git hosting
+    zh-CN: 代码托管
+- id: yaml
+  name:
+    en: YAML
+    zh-CN: YAML
+- id: text-processing
+  name:
+    en: Text processing
+    zh-CN: 文本处理
+- id: file-viewer
+  name:
+    en: File viewer
+    zh-CN: 文件查看
+- id: syntax-highlighting
+  name:
+    en: Syntax highlighting
+    zh-CN: 语法高亮
+- id: text-editor
+  name:
+    en: Text editor
+    zh-CN: 文本编辑
+- id: http-client
+  name:
+    en: HTTP client
+    zh-CN: HTTP 客户端
+- id: file-download
+  name:
+    en: File download
+    zh-CN: 文件下载
+- id: remote-login
+  name:
+    en: Remote login
+    zh-CN: 远程登录
+- id: system-monitor
+  name:
+    en: System monitor
+    zh-CN: 系统监控
+- id: terminal-multiplexer
+  name:
+    en: Terminal multiplexer
+    zh-CN: 终端复用
+- id: task-runner
+  name:
+    en: Task runner
+    zh-CN: 任务执行
+- id: compiler
+  name:
+    en: Compiler
+    zh-CN: 编译器
+- id: kubernetes
+  name:
+    en: Kubernetes
+    zh-CN: Kubernetes
+- id: sql
+  name:
+    en: SQL
+    zh-CN: SQL
+- id: key-value
+  name:
+    en: Key-value database
+    zh-CN: 键值数据库
+- id: audio
+  name:
+    en: Audio
+    zh-CN: 音频
+- id: media-conversion
+  name:
+    en: Media conversion
+    zh-CN: 媒体转换
+- id: digital-signature
+  name:
+    en: Digital signature
+    zh-CN: 数字签名
+- id: tls
+  name:
+    en: TLS
+    zh-CN: TLS

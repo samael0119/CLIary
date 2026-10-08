@@ -9,6 +9,8 @@ categories:
 - text
 tags:
 - filter
+- yaml
+- text-processing
 platforms:
 - linux
 - macos
@@ -17,3 +19,16 @@ install:
   brew:
     package: yq
     command: brew install yq
+keywords:
+  en:
+  - yaml
+  - configuration
+  - extract fields
+  - edit fields
+  - filter data
+  zh-CN:
+  - YAML
+  - 配置
+  - 提取字段
+  - 编辑字段
+  - 筛选字段

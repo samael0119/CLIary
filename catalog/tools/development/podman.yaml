@@ -21,3 +21,14 @@ install:
   brew:
     package: podman
     command: brew install podman
+keywords:
+  en:
+  - build containers
+  - run containers
+  - container image
+  - manage pods
+  zh-CN:
+  - 构建容器
+  - 运行容器
+  - 容器镜像
+  - 管理容器

@@ -9,6 +9,7 @@ categories:
 - text
 tags:
 - filter
+- text-processing
 platforms:
 - linux
 - macos
@@ -20,3 +21,15 @@ install:
   brew:
     package: gawk
     command: brew install gawk
+keywords:
+  en:
+  - text columns
+  - column processing
+  - field extraction
+  - tabular text
+  zh-CN:
+  - 按列
+  - 列处理
+  - 文本数据
+  - 字段提取
+  - 表格数据

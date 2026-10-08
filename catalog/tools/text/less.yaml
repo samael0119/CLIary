@@ -10,6 +10,7 @@ categories:
 tags:
 - files
 - tui
+- file-viewer
 platforms:
 - linux
 - macos
@@ -22,3 +23,15 @@ install:
   brew:
     package: less
     command: brew install less
+keywords:
+  en:
+  - file pager
+  - page by page
+  - scroll text
+  - read large file
+  zh-CN:
+  - 分页阅读
+  - 逐页
+  - 翻页
+  - 文本浏览
+  - 大文件阅读

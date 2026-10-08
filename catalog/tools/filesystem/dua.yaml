@@ -11,15 +11,29 @@ tags:
 - disk
 - storage
 - interactive
+- disk-usage
 platforms:
 - linux
 - macos
 similar:
 - ncdu
 keywords:
+  en:
+  - disk usage
+  - directory size
+  - folder space
+  - large files
+  - interactive disk analyzer
   zh-CN:
   - 磁盘空间
   - 找大文件
+  - 磁盘占用
+  - 目录大小
+  - 文件夹
+  - 占空间
+  - 占地方
+  - 大文件
+  - 交互式
 install:
   brew:
     package: dua-cli

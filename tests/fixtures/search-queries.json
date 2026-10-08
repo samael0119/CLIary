@@ -1,0 +1,533 @@
+[
+  {
+    "group": "exact",
+    "query": "ncdu",
+    "expected": [
+      "ncdu"
+    ],
+    "rank": 1
+  },
+  {
+    "group": "exact",
+    "query": "RG",
+    "expected": [
+      "rg"
+    ],
+    "rank": 1
+  },
+  {
+    "group": "exact",
+    "query": "ripgrep",
+    "expected": [
+      "rg"
+    ],
+    "rank": 1
+  },
+  {
+    "group": "exact",
+    "query": "btm",
+    "expected": [
+      "bottom"
+    ],
+    "rank": 1
+  },
+  {
+    "group": "exact",
+    "query": "tsc",
+    "expected": [
+      "typescript"
+    ],
+    "rank": 1
+  },
+  {
+    "group": "exact",
+    "query": "redis-cli",
+    "expected": [
+      "redis-cli"
+    ],
+    "rank": 1
+  },
+  {
+    "group": "exact",
+    "query": "lazygit",
+    "expected": [
+      "lazygit"
+    ],
+    "rank": 1
+  },
+  {
+    "group": "exact",
+    "query": "Neovim",
+    "expected": [
+      "nvim"
+    ],
+    "rank": 1
+  },
+  {
+    "group": "task",
+    "query": "磁盘空间",
+    "expected": [
+      "ncdu",
+      "gdu",
+      "dua",
+      "dust",
+      "du"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "想知道电脑里哪个文件夹占地方",
+    "expected": [
+      "ncdu",
+      "gdu",
+      "dua",
+      "dust",
+      "du"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "目录太大，想找出占空间的文件",
+    "expected": [
+      "ncdu",
+      "gdu",
+      "dua",
+      "dust",
+      "du"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "交互式分析磁盘占用",
+    "expected": [
+      "ncdu",
+      "gdu",
+      "dua"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "查找文件",
+    "expected": [
+      "fd",
+      "find"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "按文件名搜索目录",
+    "expected": [
+      "fd",
+      "find"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "忘了文件名，只记得一小部分",
+    "expected": [
+      "fzf",
+      "fd",
+      "find"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "在源码里查一段文字",
+    "expected": [
+      "rg",
+      "ag",
+      "grep"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "递归搜索文本内容",
+    "expected": [
+      "rg",
+      "ag",
+      "grep"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "看一下仓库过去的提交",
+    "expected": [
+      "git",
+      "tig",
+      "lazygit"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "查看 Git 提交历史",
+    "expected": [
+      "git",
+      "tig",
+      "lazygit"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "在终端交互管理 Git",
+    "expected": [
+      "lazygit",
+      "tig"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "查看代码修改差异",
+    "expected": [
+      "delta",
+      "git",
+      "lazygit"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "把 JSON 排版成容易看的样子",
+    "expected": [
+      "jq"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "从 JSON 中提取字段",
+    "expected": [
+      "jq"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "编辑 YAML 配置里的字段",
+    "expected": [
+      "yq"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "替换文本中的字符串",
+    "expected": [
+      "sed"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "按列处理文本数据",
+    "expected": [
+      "awk"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "带语法高亮看文件",
+    "expected": [
+      "bat"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "发送 HTTP 请求测试接口",
+    "expected": [
+      "httpie",
+      "xh",
+      "curl"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "下载远程文件",
+    "expected": [
+      "wget",
+      "aria2",
+      "curl"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "远程登录服务器",
+    "expected": [
+      "ssh"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "查看进程和 CPU 内存占用",
+    "expected": [
+      "htop",
+      "btop",
+      "bottom",
+      "top",
+      "procs"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "保持终端会话，分屏工作",
+    "expected": [
+      "tmux",
+      "zellij"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "文件改变时自动执行命令",
+    "expected": [
+      "entr"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "测量命令运行耗时",
+    "expected": [
+      "hyperfine"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "编译 TypeScript",
+    "expected": [
+      "typescript"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "管理 Kubernetes 集群",
+    "expected": [
+      "kubectl",
+      "k9s"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "连接 PostgreSQL 数据库",
+    "expected": [
+      "psql"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "打开 SQLite 数据库执行 SQL",
+    "expected": [
+      "sqlite3"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "访问 Redis 键值数据库",
+    "expected": [
+      "redis-cli"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "转换视频格式",
+    "expected": [
+      "ffmpeg"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "下载网站视频",
+    "expected": [
+      "yt-dlp"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "加密和签名文件",
+    "expected": [
+      "gpg"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "处理 TLS 证书",
+    "expected": [
+      "openssl"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "which folders consume disk space",
+    "expected": [
+      "ncdu",
+      "gdu",
+      "dua",
+      "dust",
+      "du"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "find files by name",
+    "expected": [
+      "fd",
+      "find"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "search source code for text",
+    "expected": [
+      "rg",
+      "ag",
+      "grep"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "inspect earlier repository commits",
+    "expected": [
+      "git",
+      "tig",
+      "lazygit"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "make JSON readable",
+    "expected": [
+      "jq"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "extract fields from yaml",
+    "expected": [
+      "yq"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "monitor memory and CPU usage",
+    "expected": [
+      "htop",
+      "btop",
+      "bottom",
+      "top"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "split terminal into panes",
+    "expected": [
+      "tmux",
+      "zellij"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "build and run containers",
+    "expected": [
+      "docker",
+      "podman"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "list directory contents",
+    "expected": [
+      "ls",
+      "eza"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "read a file page by page",
+    "expected": [
+      "less"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "task",
+    "query": "edit text in terminal",
+    "expected": [
+      "vim",
+      "nvim"
+    ],
+    "rank": 3
+  },
+  {
+    "group": "empty",
+    "query": "",
+    "expected": [],
+    "rank": 3
+  },
+  {
+    "group": "empty",
+    "query": "   ",
+    "expected": [],
+    "rank": 3
+  },
+  {
+    "group": "empty",
+    "query": "𠮷𠮷未知词",
+    "expected": [],
+    "rank": 3
+  },
+  {
+    "group": "empty",
+    "query": "zzqxxvunknown",
+    "expected": [],
+    "rank": 3
+  },
+  {
+    "group": "empty",
+    "query": "\" OR *",
+    "expected": [],
+    "rank": 3
+  },
+  {
+    "group": "empty",
+    "query": "请帮我找个工具",
+    "expected": [],
+    "rank": 3
+  }
+]

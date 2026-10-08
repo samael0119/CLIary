@@ -4,6 +4,7 @@ mod history_import;
 mod history_sources;
 mod installed;
 mod paths;
+mod search;
 mod shell_alias;
 mod sync;
 mod user;

@@ -10,6 +10,7 @@ categories:
 tags:
 - interactive
 - filter
+- fuzzy-search
 platforms:
 - linux
 - macos
@@ -21,3 +22,15 @@ install:
   brew:
     package: fzf
     command: brew install fzf
+keywords:
+  en:
+  - fuzzy search
+  - partial name
+  - file name
+  - interactive selection
+  zh-CN:
+  - 模糊搜索
+  - 模糊查找
+  - 文件名
+  - 部分名称
+  - 交互选择

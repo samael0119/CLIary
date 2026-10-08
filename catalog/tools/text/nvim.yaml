@@ -10,6 +10,7 @@ categories:
 tags:
 - editor
 - interactive
+- text-editor
 platforms:
 - linux
 - macos
@@ -22,3 +23,15 @@ install:
   brew:
     package: neovim
     command: brew install neovim
+keywords:
+  en:
+  - edit text
+  - terminal editor
+  - editing file
+  - neovim
+  zh-CN:
+  - 编辑文本
+  - 文本编辑
+  - 编辑文件
+  - 终端编辑器
+  - Neovim

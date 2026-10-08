@@ -9,6 +9,7 @@ categories:
 - shell
 tags:
 - interactive
+- task-runner
 platforms:
 - linux
 - macos
@@ -20,3 +21,14 @@ install:
   brew:
     package: watch
     command: brew install watch
+keywords:
+  en:
+  - repeat command
+  - periodic command
+  - refresh output
+  - monitor output
+  zh-CN:
+  - 重复执行
+  - 定时执行
+  - 刷新输出
+  - 监视输出

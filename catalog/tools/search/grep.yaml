@@ -10,6 +10,7 @@ categories:
 tags:
 - files
 - filter
+- text-search
 platforms:
 - linux
 - macos
@@ -23,3 +24,15 @@ install:
   brew:
     package: grep
     command: brew install grep
+keywords:
+  en:
+  - text search
+  - file content
+  - pattern matching
+  - regular expression
+  zh-CN:
+  - 文本搜索
+  - 文件内容
+  - 文字
+  - 正则表达式
+  - 内容查找

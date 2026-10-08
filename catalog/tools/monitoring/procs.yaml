@@ -9,6 +9,7 @@ categories:
 - monitoring
 tags:
 - process
+- system-monitor
 platforms:
 - linux
 - macos
@@ -17,3 +18,14 @@ install:
   brew:
     package: procs
     command: brew install procs
+keywords:
+  en:
+  - process listing
+  - process information
+  - running processes
+  - process search
+  zh-CN:
+  - 进程列表
+  - 进程信息
+  - 运行进程
+  - 进程查询

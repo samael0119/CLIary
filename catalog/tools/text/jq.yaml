@@ -10,6 +10,7 @@ categories:
 tags:
 - json
 - filter
+- text-processing
 platforms:
 - linux
 - macos
@@ -21,3 +22,18 @@ install:
   brew:
     package: jq
     command: brew install jq
+keywords:
+  en:
+  - json
+  - format json
+  - pretty print
+  - readable json
+  - extract fields
+  - filter data
+  zh-CN:
+  - JSON
+  - 格式化
+  - 排版
+  - 提取字段
+  - 筛选字段
+  - 查询数据

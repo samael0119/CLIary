@@ -11,6 +11,7 @@ tags:
 - files
 - fast
 - filter
+- text-search
 platforms:
 - linux
 - macos
@@ -26,3 +27,17 @@ install:
   brew:
     package: ripgrep
     command: brew install ripgrep
+keywords:
+  en:
+  - text search
+  - source code
+  - recursive search
+  - file content
+  - pattern matching
+  zh-CN:
+  - 文本搜索
+  - 源码
+  - 递归搜索
+  - 文件内容
+  - 文字
+  - 正则表达式

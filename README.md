@@ -172,6 +172,32 @@ XDG base directories and `CLIARY_CONFIG_DIR`, `CLIARY_DATA_DIR`, and `CLIARY_CAC
 
 Catalog 条目移除后，可用原工具 ID 或实际命令名查询已保存的历史，统计也会保留这些记录。首次使用按真实记录时间计算，不因工具库更新而重置；Catalog 更新不会改写或自动合并旧记录。显式应用别名表可归类此前未识别的导入记录。
 
+## Search by task or tool name
+
+Search is entirely local and works without a model. All 55 bundled tools have English/Chinese task keywords and purpose tags. Names, aliases and executable names take precedence; task keywords and specific tags outweigh broad category matches. Chinese phrases and basic English plurals are handled lexically, without interpreting arbitrary instructions or filter constraints.
+
+```sh
+target/debug/cliary search "想知道电脑里哪个文件夹占地方"
+target/debug/cliary search "看一下仓库过去的提交"
+target/debug/cliary search "从 JSON 中提取字段"
+target/debug/cliary search "find files by name"
+```
+
+The Web Discovery page uses the same ranking. There are 61 fixed query cases, including 47 task descriptions. Run the isolated CLI evaluation with:
+
+```sh
+python3 scripts/evaluate_search.py
+cargo test -p cliary-core --test search_quality
+```
+
+Recognized unmodified older bundled catalogs update automatically when a new binary opens them. Custom catalogs and synced catalogs with version >1 are preserved. To explicitly replace the Catalog with the current binary's bundled data, offline:
+
+```sh
+cliary sync --bundled
+```
+
+This preserves favorites, notes, the installed snapshot and usage history in `user.db`. A refreshed bundled Catalog uses version 1; a later remote sync can replace it with a newer version. Restart a running Web process to load the new binary. Search queries are limited to 4096 UTF-8 bytes.
+
 ## Contribute Catalog entries
 
 Add one YAML file under `catalog/tools/<category>/`. English description and at least one executable are required; Simplified Chinese descriptions are encouraged. Categories and tags use stable IDs in `catalog/i18n/`. Validate locally:

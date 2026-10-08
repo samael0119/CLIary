@@ -18,3 +18,14 @@ install:
   brew:
     package: docker
     command: brew install docker
+keywords:
+  en:
+  - build containers
+  - run containers
+  - container image
+  - application container
+  zh-CN:
+  - 构建容器
+  - 运行容器
+  - 容器镜像
+  - 应用容器

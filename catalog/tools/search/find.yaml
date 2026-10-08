@@ -10,6 +10,7 @@ categories:
 tags:
 - files
 - filter
+- file-search
 platforms:
 - linux
 - macos
@@ -22,3 +23,16 @@ install:
   brew:
     package: findutils
     command: brew install findutils
+keywords:
+  en:
+  - find files
+  - file name
+  - filename
+  - file properties
+  - directory search
+  zh-CN:
+  - 查找文件
+  - 文件名
+  - 文件属性
+  - 搜索目录
+  - 查找目录

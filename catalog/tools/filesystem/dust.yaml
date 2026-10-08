@@ -11,6 +11,7 @@ tags:
 - disk
 - storage
 - fast
+- disk-usage
 platforms:
 - linux
 - macos
@@ -18,9 +19,22 @@ similar:
 - ncdu
 - gdu
 keywords:
+  en:
+  - disk usage
+  - directory size
+  - folder space
+  - large files
+  - disk summary
   zh-CN:
   - 磁盘空间
   - 找大文件
+  - 磁盘占用
+  - 目录大小
+  - 文件夹
+  - 占空间
+  - 占地方
+  - 大文件
+  - 空间分布
 install:
   brew:
     package: dust

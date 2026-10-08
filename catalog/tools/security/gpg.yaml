@@ -9,6 +9,7 @@ categories:
 - security
 tags:
 - encryption
+- digital-signature
 platforms:
 - linux
 - macos
@@ -20,3 +21,15 @@ install:
   brew:
     package: gnupg
     command: brew install gnupg
+keywords:
+  en:
+  - encrypt file
+  - digital signature
+  - sign file
+  - openpgp
+  zh-CN:
+  - 加密文件
+  - 加密
+  - 数字签名
+  - 签名
+  - OpenPGP

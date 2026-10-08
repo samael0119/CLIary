@@ -96,8 +96,11 @@ enum Command {
         format: Option<ReportFormat>,
     },
     Sync {
-        #[arg(long)]
+        #[arg(long, conflicts_with = "bundled")]
         url: Option<String>,
+        /// Replace only the Catalog with this binary's bundled data, offline.
+        #[arg(long)]
+        bundled: bool,
     },
     Web,
     Config {
@@ -1210,7 +1213,19 @@ fn main() -> Result<()> {
                 println!();
             }
         }
-        Command::Sync { url } => {
+        Command::Sync { url, bundled } => {
+            if bundled {
+                core.refresh_bundled_catalog()?;
+                status(
+                    args.json,
+                    tr(
+                        &lang,
+                        "Bundled catalog refreshed; personal data preserved",
+                        "内置目录已刷新，个人数据已保留",
+                    ),
+                )?;
+                return Ok(());
+            }
             let manifest = core.sync_catalog(url.as_deref())?;
             if args.json {
                 out(json!(manifest))?

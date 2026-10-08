@@ -9,6 +9,7 @@ categories:
 - text
 tags:
 - files
+- file-viewer
 platforms:
 - linux
 - macos
@@ -21,3 +22,14 @@ install:
   brew:
     package: coreutils
     command: brew install coreutils
+keywords:
+  en:
+  - file content
+  - read file
+  - print text
+  - concatenate files
+  zh-CN:
+  - 文件内容
+  - 读取文件
+  - 输出文本
+  - 拼接文件

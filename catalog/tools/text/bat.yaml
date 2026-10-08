@@ -11,6 +11,8 @@ categories:
 tags:
 - files
 - tui
+- file-viewer
+- syntax-highlighting
 platforms:
 - linux
 - macos
@@ -24,3 +26,15 @@ install:
   brew:
     package: bat
     command: brew install bat
+keywords:
+  en:
+  - file viewer
+  - syntax highlighting
+  - read file
+  - highlight code
+  zh-CN:
+  - 文件查看
+  - 语法高亮
+  - 高亮
+  - 读取文件
+  - 代码阅读

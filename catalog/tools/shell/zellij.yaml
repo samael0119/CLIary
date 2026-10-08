@@ -10,6 +10,7 @@ categories:
 tags:
 - tui
 - interactive
+- terminal-multiplexer
 platforms:
 - linux
 - macos
@@ -22,3 +23,15 @@ install:
   brew:
     package: zellij
     command: brew install zellij
+keywords:
+  en:
+  - split terminal
+  - terminal panes
+  - persistent session
+  - terminal workspace
+  zh-CN:
+  - 终端分屏
+  - 分屏
+  - 会话保持
+  - 会话
+  - 窗格

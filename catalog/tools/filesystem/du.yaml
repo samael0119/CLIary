@@ -10,6 +10,7 @@ categories:
 tags:
 - disk
 - storage
+- disk-usage
 platforms:
 - linux
 - macos
@@ -21,3 +22,16 @@ install:
   brew:
     package: coreutils
     command: brew install coreutils
+keywords:
+  en:
+  - disk usage
+  - directory size
+  - folder space
+  - file sizes
+  zh-CN:
+  - 磁盘占用
+  - 目录大小
+  - 文件夹
+  - 占空间
+  - 占地方
+  - 文件大小

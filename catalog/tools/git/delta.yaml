@@ -9,6 +9,8 @@ categories:
 - git
 tags:
 - files
+- git-diff
+- syntax-highlighting
 platforms:
 - linux
 - macos
@@ -17,3 +19,14 @@ install:
   brew:
     package: git-delta
     command: brew install git-delta
+keywords:
+  en:
+  - git diff
+  - code changes
+  - diff highlighting
+  - patch viewer
+  zh-CN:
+  - 代码修改
+  - 差异
+  - 补丁
+  - 对比高亮
