@@ -49,6 +49,9 @@ enum Command {
         tool: String,
         #[arg(long)]
         remove: bool,
+        /// Remove this saved ID without resolving current names or aliases.
+        #[arg(long, requires = "remove")]
+        exact_id: bool,
     },
     Note {
         tool: String,
@@ -597,9 +600,16 @@ fn main() -> Result<()> {
             }
         }
         Command::Favorites => {
-            let favorites = core.favorites()?;
+            let favorites = core.favorite_entries()?;
             if args.json {
-                out(json!(favorites))?
+                let entries = favorites
+                    .into_iter()
+                    .map(|entry| match entry.tool {
+                        Some(tool) => serde_json::to_value(tool),
+                        None => Ok(json!({"id": entry.id, "catalog_available": false})),
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                out(json!(entries))?
             } else if favorites.is_empty() {
                 println!(
                     "  {}",
@@ -618,17 +628,25 @@ fn main() -> Result<()> {
                 );
                 println!("  {}", theme.dim(&"─".repeat(68)));
                 for f in favorites {
-                    println!(
-                        "  {:<18} {}",
-                        theme.bright_green(&f.id),
-                        localized(&f.description, &lang)
-                    );
+                    let description = f.tool.as_ref().map(|tool| localized(&tool.description, &lang))
+                        .unwrap_or_else(|| tr(&lang,
+                            "Catalog entry unavailable; remove with 'cliary favorite <id> --remove --exact-id'.",
+                            "当前工具库无此资料；可用 'cliary favorite <id> --remove --exact-id' 取消收藏。"));
+                    println!("  {:<18} {}", theme.bright_green(&f.id), description);
                 }
                 println!();
             }
         }
-        Command::Favorite { tool, remove } => {
-            core.set_favorite(&tool, !remove)?;
+        Command::Favorite {
+            tool,
+            remove,
+            exact_id,
+        } => {
+            if exact_id {
+                core.remove_favorite(&tool)?;
+            } else {
+                core.set_favorite(&tool, !remove)?;
+            }
             status(
                 args.json,
                 if remove {

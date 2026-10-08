@@ -78,6 +78,8 @@ Statistics use the device's local calendar time at report generation. Only captu
 
 网页侧栏选择「年度报告」，可切换年份查看真实调用量、活跃天数、常用工具与十二个月的趋势。数据来自已采集的调用，不代表完整使用历史；空月份不等于没有使用。当前年度会提示尚未结束。
 
+Favorites survive Catalog updates that remove tools. `cliary favorites` and the Web Favorites page show unavailable entries by their saved ID; remove them with `cliary favorite <id> --remove --exact-id` or the page's **Remove favorite** button. Exact ID removal is safe to retry even if a different tool later uses that ID as an alias; ordinary `--remove` still supports current names and aliases. Removing a bookmark keeps notes and usage history. If the same ID returns to the Catalog, its tool details appear again. In `favorites --json`, available entries keep their Tool object shape; unavailable entries contain only `id` and `catalog_available: false` (tool metadata is absent). Core callers needing every bookmark should use `favorite_entries()`; `favorites()` returns only entries with current metadata.
+
 `--lang en` and `--lang zh-CN` temporarily override the language. `cliary config set language zh-CN` saves it. Search indexes both languages regardless of the UI language.
 
 ## Browse installed tools

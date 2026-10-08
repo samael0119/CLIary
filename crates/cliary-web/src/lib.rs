@@ -115,6 +115,7 @@ pub fn serve(core: Cliary) -> anyhow::Result<()> {
                 .route("/scan", post(scan))
                 .route("/categories", get(categories))
                 .route("/favorites", get(favorites))
+                .route("/favorites/remove", post(remove_favorite))
                 .route("/compare", get(comparison::compare))
                 .route("/history", get(history))
                 .route("/stats", get(stats))
@@ -164,7 +165,7 @@ async fn home(State(app): State<App>) -> WebResult {
     } else {
         "—".into()
     };
-    let favorites = app.core.favorites().map_err(error)?.len();
+    let favorites = app.core.favorite_entries().map_err(error)?.len();
     let catalog = app.core.catalog_count().map_err(error)?;
     let mut body = format!(
         "<section class='hero'><div class='hero-copy'><span class='eyebrow hero-eyebrow'><span class='eyebrow-line'></span>{}</span><h1>{}<br><em>{}</em></h1><p>{}</p><form class='hero-search' action='/search'><span class='search-glyph'>⌕</span><input name='q' autofocus aria-label='{}' placeholder='{}'><button>{} <span class='kbd-tag' style='background:rgba(255,255,255,0.2); border:none; color:#fff;'>↵</span></button></form><div class='hero-hint'><span>{}</span> · <span>{} <a href='/search?q=ncdu'>ncdu</a>, <a href='/search?q=ripgrep'>ripgrep</a>, <a href='/search?q=dust'>dust</a></span></div></div><div class='hero-art' aria-hidden='true'><div class='terminal'><div class='terminal-top'><span class='terminal-dots'><i></i><i></i><i></i></span><span>cliary — local workspace</span><span>⌘</span></div><div class='terminal-body'><p><span class='prompt'>❯</span> cliary search <span class='terminal-string'>“disk usage”</span></p><p class='terminal-result'><span class='terminal-check'>●</span> ncdu <span>interactive disk usage</span></p><p class='terminal-result'><span class='terminal-check'>●</span> gdu <span>fast disk analyzer</span></p><p><span class='prompt'>❯</span> <span class='terminal-cursor'></span></p></div></div><div class='art-chip'><span class='local-dot'></span>{}</div></div></section><section class='metric-grid' aria-label='{}'><a class='metric-card' href='/installed'><span class='metric-icon'>▤</span><strong>{installed_display}</strong><span>{}</span><span class='metric-arrow'>↗</span></a><a class='metric-card' href='/favorites'><span class='metric-icon'>♡</span><strong>{favorites}</strong><span>{}</span><span class='metric-arrow'>↗</span></a><a class='metric-card' href='/categories'><span class='metric-icon'>▦</span><strong>{catalog}</strong><span>{}</span><span class='metric-arrow'>↗</span></a><a class='metric-card' href='/stats'><span class='metric-icon'>◷</span><strong>{}</strong><span>{}</span><span class='metric-arrow'>↗</span></a></section><div class='dashboard-grid'><section class='panel panel-featured'><div class='panel-heading'><div><span class='eyebrow'>{}</span><h2>{}</h2></div><a class='text-link' href='/stats'>{} ↗</a></div><div class='rank-list'>",
@@ -713,7 +714,7 @@ async fn categories(State(app): State<App>) -> WebResult {
 
 async fn favorites(State(app): State<App>) -> WebResult {
     let lang = app.core.locale(None).map_err(error)?;
-    let favorites = app.core.favorites().map_err(error)?;
+    let favorites = app.core.favorite_entries().map_err(error)?;
     let mut body = format!(
         "<section class='page-intro'><span class='eyebrow'>{}</span><h1>{}</h1><p>{}</p></section>",
         tr(&lang, "PERSONAL BOOKMARKS", "个人书签"),
@@ -741,7 +742,19 @@ async fn favorites(State(app): State<App>) -> WebResult {
             tr(&lang, "TOOLS", "个工具"),
             tr(&lang, "Ready for quick access", "随时快捷调用")
         ).unwrap();
-        for t in favorites {
+        for entry in favorites {
+            let Some(t) = entry.tool else {
+                write!(body,
+                    "<div class='tool-card favorite-missing'><div class='favorite-missing-copy'><strong>{}</strong><code>{}</code><p>{}</p></div><form class='inline-form' action='/favorites/remove' method='post'><input type='hidden' name='csrf' value='{}'><input type='hidden' name='id' value='{}'><button class='btn btn-outline' aria-label='{}'>{}</button></form></div>",
+                    tr(&lang, "Catalog entry unavailable", "工具资料暂不可用"),
+                    esc(&entry.id),
+                    tr(&lang, "This ID is absent from the current catalog. Your bookmark is kept; removing it leaves notes and history intact.", "当前工具库没有这个 ID，收藏仍被保留。取消收藏不会删除备注和使用历史。"),
+                    esc(&app.csrf), esc(&entry.id),
+                    esc(&format!("{} {}", tr(&lang, "Remove favorite", "取消收藏"), entry.id)),
+                    tr(&lang, "Remove favorite", "取消收藏"),
+                ).unwrap();
+                continue;
+            };
             write!(
                 body,
                 "<a class='tool-card' href='/tools/{}'><span class='tool-avatar'>{}</span><span class='tool-copy'><strong>{}</strong><small>{}</small></span><span class='tool-card-end'><span class='row-arrow'>↗</span></span></a>",
@@ -755,6 +768,20 @@ async fn favorites(State(app): State<App>) -> WebResult {
         body.push_str("</div>");
     }
     page(&app, "Favorites", body)
+}
+
+#[derive(Deserialize)]
+struct RemoveFavoriteForm {
+    csrf: String,
+    id: String,
+}
+async fn remove_favorite(
+    State(app): State<App>,
+    Form(form): Form<RemoveFavoriteForm>,
+) -> Result<Redirect, (StatusCode, String)> {
+    check(&app, &form.csrf)?;
+    app.core.remove_favorite(&form.id).map_err(error)?;
+    Ok(Redirect::to("/favorites"))
 }
 
 fn usage_empty_state(lang: &str, route: &str, last_used: Option<&str>) -> String {
@@ -1121,5 +1148,153 @@ mod tests {
             assert!(!html.contains("cliary setup shell --enable"));
             assert!(history(State(app)).await.unwrap().0.contains("my-old-tool"));
         }
+    }
+}
+
+#[cfg(test)]
+mod favorite_tests {
+    use super::*;
+    use cliary_core::Paths;
+    use rusqlite::{Connection, params};
+    use tempfile::TempDir;
+
+    fn fixture() -> (TempDir, App) {
+        let root = TempDir::new().unwrap();
+        let core = Cliary::at(Paths::new(
+            root.path().join("config"),
+            root.path().join("data"),
+            root.path().join("cache"),
+        ))
+        .unwrap();
+        core.set_language("en").unwrap();
+        (
+            root,
+            App {
+                core: Arc::new(core),
+                csrf: "test-token".into(),
+            },
+        )
+    }
+
+    fn retire(app: &App, id: &str) {
+        Connection::open(&app.core.paths.catalog_db)
+            .unwrap()
+            .execute("DELETE FROM tools WHERE id=?1", [id])
+            .unwrap();
+    }
+
+    #[tokio::test]
+    async fn mixed_and_all_retired_bookmarks_render_and_count_on_home() {
+        let (_root, app) = fixture();
+        app.core.set_favorite("ncdu", true).unwrap();
+        app.core.set_favorite("gdu", true).unwrap();
+        app.core.record_usage("ncdu").unwrap();
+        retire(&app, "ncdu");
+        let html = favorites(State(app.clone())).await.unwrap().0;
+        assert!(html.contains("href='/tools/gdu'"));
+        assert!(!html.contains("href='/tools/ncdu'"));
+        assert!(html.contains("Catalog entry unavailable"));
+        assert!(html.contains("name='id' value='ncdu'"));
+        assert!(html.contains("action='/favorites/remove'"));
+        let home = home(State(app.clone())).await.unwrap().0;
+        let metric = home
+            .split("href='/favorites'")
+            .nth(1)
+            .unwrap()
+            .split("</a>")
+            .next()
+            .unwrap();
+        assert!(metric.contains("<strong>2</strong>"));
+        retire(&app, "gdu");
+        app.core.set_language("zh-CN").unwrap();
+        let html = favorites(State(app)).await.unwrap().0;
+        assert_eq!(
+            html.matches("class='tool-card favorite-missing'").count(),
+            2
+        );
+        assert!(html.contains("工具资料暂不可用"));
+        assert!(!html.contains("还没有添加任何收藏"));
+    }
+
+    #[tokio::test]
+    async fn removal_requires_csrf_is_retryable_and_preserves_personal_data() {
+        let (_root, app) = fixture();
+        app.core.set_favorite("ncdu", true).unwrap();
+        app.core.save_note("ncdu", "retain this note").unwrap();
+        app.core.record_usage("ncdu").unwrap();
+        retire(&app, "ncdu");
+        let result = remove_favorite(
+            State(app.clone()),
+            Form(RemoveFavoriteForm {
+                csrf: "wrong".into(),
+                id: "ncdu".into(),
+            }),
+        )
+        .await;
+        assert_eq!(result.unwrap_err().0, StatusCode::FORBIDDEN);
+        assert_eq!(app.core.favorite_entries().unwrap().len(), 1);
+        for _ in 0..2 {
+            let response = remove_favorite(
+                State(app.clone()),
+                Form(RemoveFavoriteForm {
+                    csrf: app.csrf.clone(),
+                    id: "ncdu".into(),
+                }),
+            )
+            .await
+            .unwrap()
+            .into_response();
+            assert_eq!(response.status(), StatusCode::SEE_OTHER);
+            assert_eq!(response.headers()[header::LOCATION], "/favorites");
+        }
+        let db = Connection::open(&app.core.paths.user_db).unwrap();
+        assert_eq!(
+            db.query_row("SELECT body FROM notes WHERE tool_id='ncdu'", [], |r| {
+                r.get::<_, String>(0)
+            })
+            .unwrap(),
+            "retain this note"
+        );
+        assert_eq!(
+            db.query_row(
+                "SELECT COUNT(*) FROM usage_events WHERE tool_id='ncdu'",
+                [],
+                |r| r.get::<_, i64>(0)
+            )
+            .unwrap(),
+            1
+        );
+        assert!(
+            favorites(State(app))
+                .await
+                .unwrap()
+                .0
+                .contains("No favorites added yet")
+        );
+    }
+
+    #[tokio::test]
+    async fn legacy_ids_are_escaped_and_removed_without_url_or_alias_resolution() {
+        let (_root, app) = fixture();
+        let id = "旧工具 / '<script>&\" + ? #".repeat(12);
+        let db = Connection::open(&app.core.paths.user_db).unwrap();
+        db.execute("INSERT INTO favorites VALUES (?1, 1)", [&id])
+            .unwrap();
+        let html = favorites(State(app.clone())).await.unwrap().0;
+        assert!(html.contains(&format!("name='id' value='{}'", esc(&id))));
+        assert!(html.contains(&format!("<code>{}</code>", esc(&id))));
+        assert!(!html.contains("<script>&"));
+        db.execute("INSERT INTO favorites VALUES (?1, 1)", params!["gdu"])
+            .unwrap();
+        let _ = remove_favorite(
+            State(app.clone()),
+            Form(RemoveFavoriteForm {
+                csrf: app.csrf.clone(),
+                id,
+            }),
+        )
+        .await
+        .unwrap();
+        assert_eq!(app.core.favorite_entries().unwrap()[0].id, "gdu");
     }
 }
