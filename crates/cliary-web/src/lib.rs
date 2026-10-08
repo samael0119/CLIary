@@ -1297,4 +1297,79 @@ mod favorite_tests {
         .unwrap();
         assert_eq!(app.core.favorite_entries().unwrap()[0].id, "gdu");
     }
+
+    #[tokio::test]
+    async fn integrated_pages_survive_retired_favorite_with_distinct_executable() {
+        let (_root, app) = fixture();
+        app.core.set_favorite("bottom", true).unwrap();
+        app.core.save_note("bottom", "keep after update").unwrap();
+        app.core.record_usage("btm").unwrap();
+        app.core.record_usage("ncdu").unwrap();
+        let db = Connection::open(&app.core.paths.user_db).unwrap();
+        db.execute(
+            "INSERT INTO installed VALUES ('btm','/fixture/bin/btm',NULL,NULL,'bottom',1)",
+            [],
+        )
+        .unwrap();
+        db.execute(
+            "INSERT INTO meta VALUES ('installed_scan_state','done')",
+            [],
+        )
+        .unwrap();
+        retire(&app, "bottom");
+        assert_eq!(app.core.history(Some("bottom")).unwrap().runs, 1);
+        assert_eq!(app.core.stats(Some(30), None).unwrap().total_runs, 2);
+        assert_eq!(app.core.wrapped(None).unwrap().total_runs, 2);
+        for lang in ["en", "zh-CN"] {
+            app.core.set_language(lang).unwrap();
+            assert!(home(State(app.clone())).await.is_ok());
+            assert!(
+                history(State(app.clone()))
+                    .await
+                    .unwrap()
+                    .0
+                    .contains("bottom")
+            );
+            assert!(
+                stats(State(app.clone()))
+                    .await
+                    .unwrap()
+                    .0
+                    .contains("bottom")
+            );
+            let bookmarks = favorites(State(app.clone())).await.unwrap().0;
+            assert!(bookmarks.contains("<code>bottom</code>"));
+            assert!(!bookmarks.contains("href='/tools/bottom'"));
+            let query = serde_urlencoded::from_str("filter=unmatched").unwrap();
+            let installed = installed::installed(State(app.clone()), Query(query))
+                .await
+                .unwrap()
+                .0;
+            assert!(installed.contains("btm"));
+            assert!(!installed.contains("href='/tools/bottom'"));
+            let comparison = serde_urlencoded::from_str("tools=ncdu,gdu").unwrap();
+            assert!(
+                comparison::compare(State(app.clone()), Query(comparison))
+                    .await
+                    .is_ok()
+            );
+            let annual = wrapped::wrapped(
+                State(app.clone()),
+                Query(serde_urlencoded::from_str("").unwrap()),
+            )
+            .await
+            .unwrap();
+            assert_eq!(annual.0, StatusCode::OK);
+            assert!(annual.1.0.contains("bottom"));
+        }
+        app.core.remove_favorite("bottom").unwrap();
+        assert_eq!(app.core.history(Some("btm")).unwrap().runs, 1);
+        assert_eq!(
+            db.query_row("SELECT body FROM notes WHERE tool_id='bottom'", [], |r| {
+                r.get::<_, String>(0)
+            })
+            .unwrap(),
+            "keep after update"
+        );
+    }
 }
