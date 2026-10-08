@@ -10,6 +10,7 @@ categories:
 tags:
 - download
 - remote
+- file-download
 platforms:
 - linux
 - macos
@@ -23,3 +24,14 @@ install:
   brew:
     package: wget
     command: brew install wget
+keywords:
+  en:
+  - download file
+  - remote file
+  - network download
+  - url download
+  zh-CN:
+  - 下载文件
+  - 远程文件
+  - 网络下载
+  - 网页下载

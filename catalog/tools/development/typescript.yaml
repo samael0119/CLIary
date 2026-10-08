@@ -1,22 +1,34 @@
 id: typescript
 name: TypeScript compiler
 executables:
-  - tsc
+- tsc
 description:
   en: Compile and type-check TypeScript projects.
   zh-CN: 编译和检查 TypeScript 项目类型。
 categories:
-  - development
+- development
 tags:
-  - files
+- files
+- compiler
 homepage: https://www.typescriptlang.org/
 repository: https://github.com/microsoft/TypeScript
 platforms:
-  - linux
-  - macos
+- linux
+- macos
 install:
   npm:
     package: typescript
     command: npm install -g typescript
 common_commands:
-  - tsc --noEmit
+- tsc --noEmit
+keywords:
+  en:
+  - typescript
+  - compile
+  - type check
+  - tsc
+  zh-CN:
+  - TypeScript
+  - 编译
+  - 类型检查
+  - 静态检查

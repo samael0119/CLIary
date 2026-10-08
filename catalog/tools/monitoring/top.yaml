@@ -9,6 +9,7 @@ categories:
 - monitoring
 tags:
 - process
+- system-monitor
 platforms:
 - linux
 - macos
@@ -21,3 +22,15 @@ install:
   brew:
     package: procps
     command: brew install procps
+keywords:
+  en:
+  - cpu usage
+  - memory usage
+  - monitor processes
+  - system load
+  zh-CN:
+  - CPU
+  - 内存
+  - 进程
+  - 系统负载
+  - 资源监控

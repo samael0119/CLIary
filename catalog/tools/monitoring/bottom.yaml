@@ -10,6 +10,7 @@ categories:
 tags:
 - tui
 - process
+- system-monitor
 platforms:
 - linux
 - macos
@@ -19,3 +20,15 @@ install:
   brew:
     package: bottom
     command: brew install bottom
+keywords:
+  en:
+  - cpu usage
+  - memory usage
+  - monitor processes
+  - system resources
+  zh-CN:
+  - CPU
+  - 内存
+  - 进程
+  - 系统资源
+  - 资源监控

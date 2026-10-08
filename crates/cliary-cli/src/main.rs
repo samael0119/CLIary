@@ -96,8 +96,14 @@ enum Command {
         format: Option<ReportFormat>,
     },
     Sync {
-        #[arg(long)]
+        #[arg(long, conflicts_with_all = ["bundled", "from"])]
         url: Option<String>,
+        /// Import manifest.json and catalog.db.zst from a downloaded release directory.
+        #[arg(long, conflicts_with = "bundled")]
+        from: Option<std::path::PathBuf>,
+        /// Replace only the Catalog with this binary's bundled data, offline.
+        #[arg(long)]
+        bundled: bool,
     },
     Web,
     Config {
@@ -1210,8 +1216,24 @@ fn main() -> Result<()> {
                 println!();
             }
         }
-        Command::Sync { url } => {
-            let manifest = core.sync_catalog(url.as_deref())?;
+        Command::Sync { url, bundled, from } => {
+            if bundled {
+                core.refresh_bundled_catalog()?;
+                status(
+                    args.json,
+                    tr(
+                        &lang,
+                        "Bundled catalog refreshed; personal data preserved",
+                        "内置目录已刷新，个人数据已保留",
+                    ),
+                )?;
+                return Ok(());
+            }
+            let manifest = if let Some(directory) = from {
+                core.sync_catalog_from_dir(&directory)?
+            } else {
+                core.sync_catalog(url.as_deref())?
+            };
             if args.json {
                 out(json!(manifest))?
             } else {

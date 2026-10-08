@@ -20,5 +20,8 @@ shell-words = "1"
 zstd = "0.13"
 cliary-catalog = { path = "../cliary-catalog" }
 
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [dev-dependencies]
 tempfile = "3"

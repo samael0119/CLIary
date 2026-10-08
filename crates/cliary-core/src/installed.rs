@@ -363,34 +363,111 @@ fn package_inventory() -> HashMap<(String, String), String> {
 }
 
 fn command(program: &str, args: &[&str]) -> Option<String> {
+    command_with_limits(program, args, Duration::from_secs(3), 8 * 1024 * 1024)
+}
+
+#[cfg(unix)]
+fn command_with_limits(
+    program: &str,
+    args: &[&str],
+    timeout: Duration,
+    limit: usize,
+) -> Option<String> {
+    use std::os::fd::AsRawFd;
+    use std::os::unix::process::CommandExt;
+
     let mut child = Command::new(program)
         .args(args)
+        .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
+        .process_group(0)
         .spawn()
         .ok()?;
-    let mut stdout = child.stdout.take()?;
-    let reader = std::thread::spawn(move || {
-        let mut bytes = Vec::new();
-        stdout.read_to_end(&mut bytes).ok()?;
-        Some(bytes)
-    });
-    let start = Instant::now();
-    while child.try_wait().ok()?.is_none() {
-        if start.elapsed() > Duration::from_secs(3) {
-            let _ = child.kill();
-            let _ = child.wait();
-            let _ = reader.join();
+    let group = child.id() as libc::pid_t;
+    // Always clean up descendants, including on read/wait errors and early returns.
+    let result = (|| {
+        let mut stdout = child.stdout.take()?;
+        let fd = stdout.as_raw_fd();
+        // SAFETY: fd belongs to the live ChildStdout. These calls only change its flags.
+        let flags = unsafe { libc::fcntl(fd, libc::F_GETFL) };
+        if flags < 0 || unsafe { libc::fcntl(fd, libc::F_SETFL, flags | libc::O_NONBLOCK) } < 0 {
             return None;
         }
-        std::thread::sleep(Duration::from_millis(20));
+        let start = Instant::now();
+        let mut bytes = Vec::new();
+        let mut status = None;
+        let mut eof = false;
+        let mut buffer = [0; 8192];
+        loop {
+            if start.elapsed() >= timeout {
+                return None;
+            }
+            if status.is_none() {
+                status = child.try_wait().ok()?;
+            }
+            if status.is_some_and(|status| !status.success()) {
+                return None;
+            }
+            if !eof {
+                match stdout.read(&mut buffer) {
+                    Ok(0) => eof = true,
+                    Ok(n) => {
+                        if n > limit.saturating_sub(bytes.len()) {
+                            return None;
+                        }
+                        bytes.extend_from_slice(&buffer[..n]);
+                        continue;
+                    }
+                    Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+                    Err(error) if error.kind() == std::io::ErrorKind::Interrupted => continue,
+                    Err(_) => return None,
+                }
+            }
+            if eof && status.is_some() {
+                return String::from_utf8(bytes).ok();
+            }
+            std::thread::sleep(Duration::from_millis(10));
+        }
+    })();
+    // SAFETY: a dedicated process group was created for this command, never our own.
+    // Killing the group also closes pipes inherited by package-manager descendants.
+    unsafe { libc::kill(-group, libc::SIGKILL) };
+    let _ = child.wait();
+    result
+}
+
+#[cfg(not(unix))]
+fn command_with_limits(_: &str, _: &[&str], _: Duration, _: usize) -> Option<String> {
+    None // Package inventory is currently supported on Linux and macOS only.
+}
+
+#[cfg(all(test, unix))]
+mod command_tests {
+    use super::*;
+
+    #[test]
+    fn capture_returns_only_successful_bounded_utf8() {
+        let run = |script| command_with_limits("sh", &["-c", script], Duration::from_secs(2), 32);
+        assert_eq!(run("printf hello"), Some("hello".into()));
+        assert_eq!(run("printf hello; exit 1"), None);
+        assert_eq!(run("printf '\\377'"), None);
+        assert_eq!(run("yes overflow"), None);
     }
-    let status = child.wait().ok()?;
-    let output = reader.join().ok()??;
-    if status.success() {
-        String::from_utf8(output).ok()
-    } else {
-        None
+
+    #[test]
+    fn timeout_covers_running_children_and_inherited_stdout() {
+        for script in ["sleep 10", "sleep 10 & printf parent-exited"] {
+            let start = Instant::now();
+            assert_eq!(
+                command_with_limits("sh", &["-c", script], Duration::from_millis(150), 1024),
+                None
+            );
+            assert!(
+                start.elapsed() < Duration::from_secs(2),
+                "inherited stdout exceeded deadline"
+            );
+        }
     }
 }
 

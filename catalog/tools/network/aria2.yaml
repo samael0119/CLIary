@@ -10,6 +10,7 @@ categories:
 tags:
 - download
 - fast
+- file-download
 platforms:
 - linux
 - macos
@@ -22,3 +23,14 @@ install:
   brew:
     package: aria2
     command: brew install aria2
+keywords:
+  en:
+  - download file
+  - parallel download
+  - remote file
+  - multiple protocols
+  zh-CN:
+  - 下载文件
+  - 并行下载
+  - 远程文件
+  - 多协议

@@ -11,6 +11,7 @@ tags:
 - tui
 - process
 - interactive
+- system-monitor
 platforms:
 - linux
 - macos
@@ -27,3 +28,15 @@ install:
   brew:
     package: btop
     command: brew install btop
+keywords:
+  en:
+  - cpu usage
+  - memory usage
+  - monitor processes
+  - system resources
+  zh-CN:
+  - CPU
+  - 内存
+  - 进程
+  - 系统资源
+  - 资源监控

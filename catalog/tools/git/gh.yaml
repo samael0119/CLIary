@@ -10,6 +10,7 @@ categories:
 tags:
 - remote
 - interactive
+- git-hosting
 platforms:
 - linux
 - macos
@@ -21,3 +22,14 @@ install:
   brew:
     package: gh
     command: brew install gh
+keywords:
+  en:
+  - github
+  - pull request
+  - issue management
+  - repository hosting
+  zh-CN:
+  - GitHub
+  - 拉取请求
+  - 议题
+  - 托管仓库

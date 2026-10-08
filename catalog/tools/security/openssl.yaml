@@ -9,6 +9,7 @@ categories:
 - security
 tags:
 - encryption
+- tls
 platforms:
 - linux
 - macos
@@ -17,3 +18,15 @@ install:
   apt:
     package: openssl
     command: sudo apt install openssl
+keywords:
+  en:
+  - tls certificate
+  - cryptography
+  - certificate inspection
+  - ssl
+  zh-CN:
+  - TLS
+  - 证书
+  - 加密算法
+  - 证书查看
+  - SSL

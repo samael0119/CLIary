@@ -11,6 +11,7 @@ categories:
 tags:
 - files
 - fast
+- file-search
 platforms:
 - linux
 - macos
@@ -23,3 +24,16 @@ install:
   brew:
     package: fd
     command: brew install fd
+keywords:
+  en:
+  - find files
+  - file name
+  - filename
+  - folder search
+  - file path
+  zh-CN:
+  - 查找文件
+  - 文件名
+  - 路径查找
+  - 搜索目录
+  - 查找目录

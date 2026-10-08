@@ -9,6 +9,7 @@ categories:
 - filesystem
 tags:
 - files
+- directory-listing
 platforms:
 - linux
 - macos
@@ -21,3 +22,14 @@ install:
   brew:
     package: coreutils
     command: brew install coreutils
+keywords:
+  en:
+  - list files
+  - directory listing
+  - directory contents
+  - file names
+  zh-CN:
+  - 列出文件
+  - 目录列表
+  - 目录内容
+  - 文件列表

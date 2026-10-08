@@ -10,6 +10,7 @@ categories:
 tags:
 - remote
 - encryption
+- remote-login
 platforms:
 - linux
 - macos
@@ -18,3 +19,14 @@ install:
   apt:
     package: openssh-client
     command: sudo apt install openssh-client
+keywords:
+  en:
+  - remote login
+  - secure shell
+  - connect server
+  - remote terminal
+  zh-CN:
+  - 远程登录
+  - 登录服务器
+  - 连接服务器
+  - 远程终端

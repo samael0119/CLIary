@@ -22,6 +22,29 @@ target/release/cliary web
 
 If you skip scanning, installation status remains **Not scanned** until you run `cliary scan`.
 
+### Install from a private release or offline package
+
+The current repository is private. Anonymous `curl` downloads do not work for its releases. After a release is published, use GitHub CLI with repository access:
+
+```sh
+gh auth login
+CLIARY_REPO=samael0119/CLIary sh scripts/install.sh --github
+# To pin an upgrade: add --tag v0.1.0
+```
+
+The installer uses `gh` to authenticate and download the archive and checksums from the same release. Credentials stay with GitHub CLI; CLIary does not save them or forward them to Catalog URLs. For a public repository, the ordinary HTTPS installer remains available.
+
+A downloaded or locally built package can be installed without a repository or network:
+
+```sh
+sh scripts/install.sh --from /path/to/release-assets
+# Unattended: add --no-scan --no-history
+```
+
+The directory must contain `cliary-<platform-target>.tar.gz` (with a `cliary` binary) and `SHA256SUMS`. A checksum failure leaves the installed binary untouched. Upgrades replace the binary atomically and preserve personal databases and configuration; restart a running Web server afterward to use the new binary. Existing Shell hooks stay in place; run `cliary setup shell --enable` to update them if upgrading from an older hook implementation.
+
+私有仓库使用已登录的 `gh` 下载；离线安装使用 `--from`。默认仍会询问扫描、未来历史采集与旧历史预览；不自动导入旧历史。
+
 ### Development environment scanning
 
 Scanning checks `PATH` first, then the executable directories below and common system/user directories. The first executable with a given name wins, so `PATH` takes precedence.
@@ -40,6 +63,8 @@ Scanning checks `PATH` first, then the executable directories below and common s
 | asdf managed languages | `$ASDF_DATA_DIR/shims`, `~/.asdf/shims` |
 
 C/C++, Swift and other tools exposed through `PATH` are also discovered. Use the standard Go variable `GOROOT`, rather than `GO_ROOT`. Only executable files are recorded; empty values and missing directories are skipped. Directory scanning inspects files without running discovered programs; package inventory uses the available package managers. CLIary does not recursively search projects, inactive environments or SDK versions. Custom executable directories beyond these conventions should be added to `PATH`.
+
+Each package-inventory command is bounded to three seconds and 8 MiB of output, including output inherited by child processes. A timeout or invalid output skips that inventory source; directory discovery still records executables, with ownership potentially shown as **Not detected**. Scanning several package managers can take more than three seconds overall.
 
 After changing exported environment variables or installing new tools, run `cliary scan` again in a terminal that has those values. A running Web UI inherits the environment of the process that launched it.
 
@@ -166,11 +191,49 @@ The CLI lists longer package details, repository links and examples beneath the 
 - Favorites, notes, installed snapshot, and usage events: `~/.local/share/cliary/user.db`
 - Cache: `~/.cache/cliary/`
 
-XDG base directories and `CLIARY_CONFIG_DIR`, `CLIARY_DATA_DIR`, and `CLIARY_CACHE_DIR` are supported. A Catalog update replaces only `catalog.db`. Release builds have a built-in GitHub Catalog URL; source builds can use `cliary sync --url https://github.com/OWNER/REPO/releases/latest/download` or set `catalog_url` in `config.toml`.
+XDG base directories and `CLIARY_CONFIG_DIR`, `CLIARY_DATA_DIR`, and `CLIARY_CACHE_DIR` are supported. A Catalog update replaces only `catalog.db`. Public Release builds can have a built-in GitHub Catalog URL; source builds can use `cliary sync --url https://github.com/OWNER/REPO/releases/latest/download` or set `catalog_url` in `config.toml`.
+
+For private releases, first download the Catalog assets with GitHub CLI, then import them locally:
+
+```sh
+cliary_assets_dir="$(mktemp -d)"
+cliary_release_tag="$(gh release view --repo samael0119/CLIary --json tagName --jq .tagName)"
+gh release download "$cliary_release_tag" --repo samael0119/CLIary --pattern manifest.json --pattern catalog.db.zst --dir "$cliary_assets_dir"
+cliary sync --from "$cliary_assets_dir"
+rm -rf -- "$cliary_assets_dir"
+```
+
+`sync --from` checks schema, SHA-256, decompressed size, SQLite integrity and Catalog metadata before replacement. It only accepts newer Catalog versions and leaves `user.db` unchanged. `--from`, `--url` and `--bundled` are mutually exclusive. Neither anonymous `sync --url` nor an embedded URL can authenticate to a private release; do not place credentials in URLs or configuration. `sync --bundled` remains the simpler offline option when the desired Catalog ships with the new binary.
 
 `history <tool>` matches saved tool IDs, exact captured executable names, and current Catalog aliases. If a Catalog entry is removed, its existing usage events remain queryable by the saved ID or executable name; `stats` retains those records instead of requiring the old entry. First-recorded dates come from usage events, so a Catalog update does not by itself make an existing tool newly used. Catalog updates do not rewrite saved records or IDs; an explicitly applied alias snapshot can classify previously unmatched imported records. Categorization still uses current Catalog metadata when available.
 
 Catalog 条目移除后，可用原工具 ID 或实际命令名查询已保存的历史，统计也会保留这些记录。首次使用按真实记录时间计算，不因工具库更新而重置；Catalog 更新不会改写或自动合并旧记录。显式应用别名表可归类此前未识别的导入记录。
+
+## Search by task or tool name
+
+Search is entirely local and works without a model. All 55 bundled tools have English/Chinese task keywords and purpose tags. Names, aliases and executable names take precedence; task keywords and specific tags outweigh broad category matches. Chinese phrases and basic English plurals are handled lexically, without interpreting arbitrary instructions or filter constraints.
+
+```sh
+target/debug/cliary search "想知道电脑里哪个文件夹占地方"
+target/debug/cliary search "看一下仓库过去的提交"
+target/debug/cliary search "从 JSON 中提取字段"
+target/debug/cliary search "find files by name"
+```
+
+The Web Discovery page uses the same ranking. There are 61 fixed query cases, including 47 task descriptions. Run the isolated CLI evaluation with:
+
+```sh
+python3 scripts/evaluate_search.py
+cargo test -p cliary-core --test search_quality
+```
+
+Recognized unmodified older bundled catalogs update automatically when a new binary opens them. Custom catalogs and synced catalogs with version >1 are preserved. To explicitly replace the Catalog with the current binary's bundled data, offline:
+
+```sh
+cliary sync --bundled
+```
+
+This preserves favorites, notes, the installed snapshot and usage history in `user.db`. A refreshed bundled Catalog uses version 1; a later remote sync can replace it with a newer version. Restart a running Web process to load the new binary. Search queries are limited to 4096 UTF-8 bytes.
 
 ## Contribute Catalog entries
 
@@ -183,7 +246,7 @@ cargo run -p cliary-catalog --bin cliary-catalog-build -- validate
 cargo test --workspace
 ```
 
-The GitHub Actions workflow validates PRs and publishes a new Catalog plus four platform binaries after a merge to `main`. `cliary sync` checks the manifest and SHA-256 digest before replacing the local Catalog.
+The repository contains a GitHub Actions workflow for Catalog validation and four-platform packaging. Automated publishing is currently deferred; merging to `main` alone is not evidence that a release exists. `cliary sync` checks the manifest and SHA-256 digest before replacing the local Catalog.
 
 ## V0.1 boundaries
 

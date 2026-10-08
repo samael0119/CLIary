@@ -10,6 +10,7 @@ categories:
 tags:
 - interactive
 - remote
+- sql
 platforms:
 - linux
 - macos
@@ -18,3 +19,15 @@ install:
   apt:
     package: postgresql-client
     command: sudo apt install postgresql-client
+keywords:
+  en:
+  - postgresql
+  - sql query
+  - database connection
+  - database terminal
+  zh-CN:
+  - PostgreSQL
+  - SQL
+  - 数据库连接
+  - 连接数据库
+  - 数据库查询

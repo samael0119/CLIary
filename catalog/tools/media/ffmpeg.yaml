@@ -9,6 +9,8 @@ categories:
 - media
 tags:
 - video
+- audio
+- media-conversion
 platforms:
 - linux
 - macos
@@ -20,3 +22,15 @@ install:
   brew:
     package: ffmpeg
     command: brew install ffmpeg
+keywords:
+  en:
+  - convert video
+  - video format
+  - audio processing
+  - media conversion
+  zh-CN:
+  - 视频转换
+  - 转换视频
+  - 视频格式
+  - 音频处理
+  - 媒体转换

@@ -9,6 +9,7 @@ categories:
 - text
 tags:
 - filter
+- text-processing
 platforms:
 - linux
 - macos
@@ -20,3 +21,15 @@ install:
   brew:
     package: gnu-sed
     command: brew install gnu-sed
+keywords:
+  en:
+  - text replacement
+  - replace string
+  - stream editing
+  - substitution
+  zh-CN:
+  - 文本替换
+  - 替换
+  - 字符串
+  - 流编辑
+  - 批量替换

@@ -10,6 +10,8 @@ categories:
 tags:
 - tui
 - interactive
+- version-control
+- git-history
 platforms:
 - linux
 - macos
@@ -21,3 +23,17 @@ install:
   brew:
     package: tig
     command: brew install tig
+keywords:
+  en:
+  - repository
+  - commit history
+  - earlier commits
+  - interactive git
+  - commit browser
+  zh-CN:
+  - 仓库
+  - 提交历史
+  - 提交
+  - 浏览提交
+  - 交互式
+  - 版本管理

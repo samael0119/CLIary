@@ -10,6 +10,7 @@ categories:
 tags:
 - download
 - remote
+- http-client
 platforms:
 - linux
 - macos
@@ -24,3 +25,15 @@ install:
   brew:
     package: curl
     command: brew install curl
+keywords:
+  en:
+  - http request
+  - api testing
+  - url transfer
+  - download file
+  zh-CN:
+  - HTTP 请求
+  - 测试接口
+  - 接口
+  - 传输数据
+  - 下载文件

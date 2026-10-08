@@ -10,6 +10,8 @@ categories:
 tags:
 - video
 - download
+- audio
+- file-download
 platforms:
 - linux
 - macos
@@ -24,3 +26,14 @@ install:
   pipx:
     package: yt-dlp
     command: pipx install yt-dlp
+keywords:
+  en:
+  - download video
+  - download audio
+  - website video
+  - media download
+  zh-CN:
+  - 下载视频
+  - 网站视频
+  - 下载音频
+  - 媒体下载

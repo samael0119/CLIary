@@ -1,8 +1,7 @@
 use crate::{Cliary, InstalledTool, LocalizedName, Tool};
 use anyhow::{Context, Result, bail};
-use rusqlite::{OptionalExtension, params};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 include!(concat!(env!("OUT_DIR"), "/embedded_tools.rs"));
 const CATEGORIES: &str = include_str!("../../../catalog/i18n/categories.yaml");
@@ -66,19 +65,94 @@ pub fn compare_feature_label<'a>(key: &'a str, lang: &str) -> &'a str {
 
 impl Cliary {
     pub(crate) fn init_catalog(&self) -> Result<()> {
+        use sha2::{Digest, Sha256};
+        let revision = hex::encode(Sha256::digest(format!(
+            "{}{}{}",
+            EMBEDDED_TOOLS.join("\n"),
+            CATEGORIES,
+            TAGS
+        )));
         if self.paths.catalog_db.exists() {
-            return Ok(());
+            let db = self.catalog_db()?;
+            let version: String =
+                db.query_row("SELECT value FROM meta WHERE key='version'", [], |r| {
+                    r.get(0)
+                })?;
+            // Synced catalogs own their version; never replace them with bundled data.
+            if version != "1" {
+                return Ok(());
+            }
+            let previous: Option<String> = db
+                .query_row(
+                    "SELECT value FROM meta WHERE key='bundled_revision'",
+                    [],
+                    |r| r.get(0),
+                )
+                .optional()?;
+            if previous.as_deref() == Some(&revision) {
+                return Ok(());
+            }
+            let recorded: Option<String> = db
+                .query_row(
+                    "SELECT value FROM meta WHERE key='bundled_digest'",
+                    [],
+                    |r| r.get(0),
+                )
+                .optional()?;
+            let actual = catalog_digest(&db)?;
+            // The pre-upgrade bundled v1 had no origin marker. Only its exact content
+            // is eligible; a custom/unrecognized v1 is left intact.
+            const LEGACY_BUNDLES: &[&str] = &[
+                // Last 55-tool bundle, and the earlier 54-tool serialized catalog.
+                "cd98e6046d63ac59d7a97261eb513634f1a05b00c268e8f9bb6da3262356a50a",
+                "124acd7502c68aa83e88451cf9023052d0c05fed187386dce9363c837f38cc29",
+            ];
+            let recognized = recorded.as_deref().map_or_else(
+                || LEGACY_BUNDLES.contains(&actual.as_str()),
+                |digest| digest == actual,
+            );
+            if !recognized {
+                return Ok(());
+            }
         }
+        self.refresh_bundled_catalog()
+    }
+
+    /// Explicit offline replacement with this binary's Catalog; preserves user.db.
+    pub fn refresh_bundled_catalog(&self) -> Result<()> {
+        use sha2::{Digest, Sha256};
+        let revision = hex::encode(Sha256::digest(format!(
+            "{}{}{}",
+            EMBEDDED_TOOLS.join("\n"),
+            CATEGORIES,
+            TAGS
+        )));
         let tools = EMBEDDED_TOOLS
             .iter()
             .map(|x| cliary_catalog::parse_tool(x))
             .collect::<Result<Vec<_>>>()?;
         let categories = cliary_catalog::parse_names(CATEGORIES)?;
         let tags = cliary_catalog::parse_names(TAGS)?;
-        let temp = self.paths.data_dir.join("catalog.db.initial");
-        cliary_catalog::build_database(&temp, &tools, &categories, &tags, 1)?;
-        std::fs::rename(temp, &self.paths.catalog_db)?;
-        Ok(())
+        let temp = self
+            .paths
+            .data_dir
+            .join(format!("catalog-{}.initial", rand::random::<u64>()));
+        let result = (|| -> Result<()> {
+            cliary_catalog::build_database(&temp, &tools, &categories, &tags, 1)?;
+            let db = rusqlite::Connection::open(&temp)?;
+            let digest = catalog_digest(&db)?;
+            db.execute(
+                "INSERT INTO meta(key,value) VALUES ('bundled_revision',?1),('bundled_digest',?2)",
+                params![revision, digest],
+            )?;
+            drop(db);
+            std::fs::rename(&temp, &self.paths.catalog_db)?;
+            Ok(())
+        })();
+        if result.is_err() {
+            let _ = std::fs::remove_file(temp);
+        }
+        result
     }
 
     pub fn catalog_version(&self) -> Result<u64> {
@@ -158,69 +232,17 @@ impl Cliary {
     }
 
     pub fn search(&self, query: &str, limit: usize) -> Result<Vec<ToolResult>> {
-        let q = query.trim().to_lowercase();
-        if q.is_empty() {
+        if query.trim().is_empty() || limit == 0 {
             return Ok(Vec::new());
         }
-        let db = self.catalog_db()?;
-        let mut fts = HashMap::new();
-        let expression = q
-            .split_whitespace()
-            .take(8)
-            .map(|word| format!("\"{}\"*", word.replace('"', "\"\"")))
-            .collect::<Vec<_>>()
-            .join(" OR ");
-        if !expression.is_empty()
-            && let Ok(mut stmt) = db.prepare("SELECT id, bm25(tool_search) FROM tool_search WHERE tool_search MATCH ?1 LIMIT 200")
-            && let Ok(rows) = stmt.query_map([expression], |row| Ok((row.get::<_, String>(0)?, row.get::<_, f64>(1)?))) {
-            for row in rows.flatten() { fts.insert(row.0, row.1); }
+        if query.len() > 4096 {
+            bail!("search query must be at most 4096 bytes");
         }
-        let mut stmt = db.prepare("SELECT id,text FROM tool_search")?;
-        let indexed = stmt
-            .query_map([], |row| {
-                Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-            })?
-            .collect::<rusqlite::Result<Vec<_>>>()?;
-        let mut scored = Vec::new();
-        for (id, text) in indexed {
-            let lower = text.to_lowercase();
-            let mut score = if fts.contains_key(&id) { 20 } else { 0 };
-            if id == q {
-                score += 100;
-            }
-            if id.starts_with(&q) {
-                score += 30;
-            }
-            if lower.contains(&q) {
-                score += 15;
-            }
-            for token in q.split_whitespace() {
-                if lower.contains(token) {
-                    score += 4;
-                }
-            }
-            if !q.is_ascii() {
-                let chars: Vec<_> = q.chars().collect();
-                for pair in chars.windows(2) {
-                    let pair = pair.iter().collect::<String>();
-                    if lower.contains(&pair) {
-                        score += 2;
-                    }
-                }
-            }
-            if score > 0 {
-                scored.push((id, score));
-            }
-        }
-        scored.sort_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-        let mut results = Vec::new();
-        for (id, _) in scored.into_iter().take(limit) {
-            let tool = self
-                .get_tool(&id)?
-                .context("search index references missing tool")?;
-            results.push(self.result_for(tool)?);
-        }
-        Ok(results)
+        crate::search::rank(query, self.all_tools()?, &self.categories()?, &self.tags()?)
+            .into_iter()
+            .take(limit)
+            .map(|tool| self.result_for(tool))
+            .collect()
     }
 
     fn result_for(&self, tool: Tool) -> Result<ToolResult> {
@@ -338,4 +360,18 @@ impl Cliary {
         }
         Ok(rows)
     }
+}
+
+// Hash the canonical stored records including names/tags; never touch user.db.
+fn catalog_digest(db: &Connection) -> Result<String> {
+    use sha2::{Digest, Sha256};
+    let mut digest = Sha256::new();
+    for table in ["tools", "categories", "tags"] {
+        let mut stmt = db.prepare(&format!("SELECT data FROM {table} ORDER BY id"))?;
+        for value in stmt.query_map([], |row| row.get::<_, String>(0))? {
+            digest.update(value?.as_bytes());
+            digest.update(b"\n");
+        }
+    }
+    Ok(hex::encode(digest.finalize()))
 }

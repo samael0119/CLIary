@@ -10,6 +10,7 @@ categories:
 tags:
 - container
 - remote
+- kubernetes
 platforms:
 - linux
 - macos
@@ -21,3 +22,14 @@ install:
   brew:
     package: kubernetes-cli
     command: brew install kubernetes-cli
+keywords:
+  en:
+  - kubernetes cluster
+  - manage cluster
+  - control pods
+  - cluster resources
+  zh-CN:
+  - Kubernetes
+  - 集群
+  - 管理集群
+  - 资源管理

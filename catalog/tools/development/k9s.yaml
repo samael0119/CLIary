@@ -10,6 +10,7 @@ categories:
 tags:
 - container
 - tui
+- kubernetes
 platforms:
 - linux
 - macos
@@ -18,3 +19,15 @@ install:
   brew:
     package: k9s
     command: brew install k9s
+keywords:
+  en:
+  - kubernetes cluster
+  - manage cluster
+  - terminal dashboard
+  - interactive kubernetes
+  zh-CN:
+  - Kubernetes
+  - 集群
+  - 管理集群
+  - 终端看板
+  - 交互式

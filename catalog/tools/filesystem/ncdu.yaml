@@ -12,6 +12,7 @@ tags:
 - storage
 - tui
 - interactive
+- disk-usage
 platforms:
 - linux
 - macos
@@ -23,10 +24,19 @@ keywords:
   en:
   - disk usage
   - large files
+  - directory size
+  - folder space
+  - interactive disk analyzer
   zh-CN:
   - 磁盘空间
   - 找大文件
   - 磁盘占用
+  - 目录大小
+  - 文件夹
+  - 占空间
+  - 占地方
+  - 大文件
+  - 交互式
 features:
   tui: true
   interactive: true

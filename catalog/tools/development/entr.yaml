@@ -9,6 +9,7 @@ categories:
 - development
 tags:
 - files
+- task-runner
 platforms:
 - linux
 - macos
@@ -20,3 +21,14 @@ install:
   brew:
     package: entr
     command: brew install entr
+keywords:
+  en:
+  - file change
+  - watch files
+  - run command
+  - file watcher
+  zh-CN:
+  - 文件改变
+  - 文件变化
+  - 自动执行
+  - 文件监视

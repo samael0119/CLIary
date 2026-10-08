@@ -23,3 +23,15 @@ install:
   cargo:
     package: hyperfine
     command: cargo install --locked hyperfine
+keywords:
+  en:
+  - command timing
+  - execution time
+  - benchmark commands
+  - performance comparison
+  zh-CN:
+  - 运行耗时
+  - 命令耗时
+  - 耗时
+  - 性能测试
+  - 基准测试

@@ -9,6 +9,9 @@ categories:
 - git
 tags:
 - files
+- version-control
+- git-history
+- git-diff
 platforms:
 - linux
 - macos
@@ -20,3 +23,18 @@ install:
   brew:
     package: git
     command: brew install git
+keywords:
+  en:
+  - repository
+  - commit history
+  - earlier commits
+  - branch
+  - code changes
+  - diff
+  zh-CN:
+  - 仓库
+  - 提交历史
+  - 提交
+  - 分支
+  - 代码修改
+  - 差异
