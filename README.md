@@ -22,6 +22,27 @@ target/release/cliary web
 
 If you skip scanning, installation status remains **Not scanned** until you run `cliary scan`.
 
+### Development environment scanning
+
+Scanning checks `PATH` first, then the executable directories below and common system/user directories. The first executable with a given name wins, so `PATH` takes precedence.
+
+| Environment | Additional executable directories |
+| --- | --- |
+| Java | `$JAVA_HOME/bin` |
+| Go | `$GOROOT/bin`, `$GOBIN`, each `$GOPATH/bin`; `~/go/bin` when `GOPATH` is unset or empty |
+| Rust | `$CARGO_HOME/bin`, `~/.cargo/bin` |
+| Python | `$VIRTUAL_ENV/bin`, `$CONDA_PREFIX/bin`, `$PYENV_ROOT/shims` and `bin`, `$PIPX_BIN_DIR`, `~/.pyenv/shims`, `~/.local/bin` |
+| Node.js | `$NVM_BIN`, `$VOLTA_HOME/bin`, `$npm_config_prefix/bin`, `$NPM_CONFIG_PREFIX/bin`, `$PNPM_HOME` and `bin`, `~/.volta/bin` |
+| Bun / Deno | `$BUN_INSTALL/bin`, `$DENO_INSTALL/bin`, `~/.bun/bin`, `~/.deno/bin` |
+| Ruby | `$GEM_HOME/bin`, each `$GEM_PATH/bin`, `$RBENV_ROOT/shims` and `bin`, `~/.rbenv/shims` |
+| PHP Composer | `$COMPOSER_HOME/vendor/bin`, `~/.composer/vendor/bin`, `~/.config/composer/vendor/bin` |
+| .NET | `$DOTNET_ROOT`, `~/.dotnet`, `~/.dotnet/tools` |
+| asdf managed languages | `$ASDF_DATA_DIR/shims`, `~/.asdf/shims` |
+
+C/C++, Swift and other tools exposed through `PATH` are also discovered. Use the standard Go variable `GOROOT`, rather than `GO_ROOT`. Only executable files are recorded; empty values and missing directories are skipped. Directory scanning inspects files without running discovered programs; package inventory uses the available package managers. CLIary does not recursively search projects, inactive environments or SDK versions. Custom executable directories beyond these conventions should be added to `PATH`.
+
+After changing exported environment variables or installing new tools, run `cliary scan` again in a terminal that has those values. A running Web UI inherits the environment of the process that launched it.
+
 Shell capture can be enabled or removed later:
 
 ```sh
