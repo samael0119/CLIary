@@ -29,7 +29,7 @@ pub struct CountItem {
 }
 
 /// A local-calendar year, based only on captured invocations (never arguments).
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct Wrapped {
     pub year: i32,
     pub is_current_year: bool,
@@ -41,6 +41,8 @@ pub struct Wrapped {
     pub top_tools: Vec<CountItem>,
     /// Always January through December, including months with no records.
     pub monthly_activity: Vec<CountItem>,
+    #[serde(default)]
+    pub insights: crate::WrappedInsights,
 }
 
 impl Wrapped {
@@ -93,6 +95,7 @@ impl Cliary {
                 count: months.get(&format!("{month:02}")).copied().unwrap_or(0),
             })
             .collect();
+        let insights = self.wrapped_insights(&tx, year, start, end)?;
         tx.commit()?;
         Ok(Wrapped {
             year,
@@ -104,6 +107,7 @@ impl Cliary {
             last_recorded,
             top_tools,
             monthly_activity,
+            insights,
         })
     }
 
@@ -265,7 +269,7 @@ impl Cliary {
     }
 }
 
-fn local_year_start(year: i32) -> Result<i64> {
+pub(crate) fn local_year_start(year: i32) -> Result<i64> {
     let day = chrono::NaiveDate::from_ymd_opt(year, 1, 1)
         .ok_or_else(|| anyhow::anyhow!("invalid year"))?;
     let midnight = day.and_hms_opt(0, 0, 0).unwrap();

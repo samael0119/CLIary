@@ -245,6 +245,7 @@ mod tests {
                     count: if m == 2 { 7 } else { 0 },
                 })
                 .collect(),
+            ..Wrapped::default()
         };
         for lang in ["en", "zh-CN"] {
             let body = render_report(lang, &report);

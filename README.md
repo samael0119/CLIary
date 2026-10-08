@@ -92,7 +92,7 @@ cliary wrapped 2024 --json      # Structured report / 结构化报告
 cliary --lang zh-CN wrapped 2024
 ```
 
-In the Web UI, choose **Wrapped / 年度报告** from the sidebar, or visit `/wrapped?year=2024`. Reports show captured runs, active days, tools used, first/last records, the top ten tools, and all twelve months. Executable aliases recorded with the same tool ID count as one tool; unknown executables remain visible. The current year is marked as in progress. Years from 1 through 9998 are accepted.
+In the Web UI, choose **Wrapped / 年度报告** from the sidebar, or visit `/wrapped?year=2024`. Reports show dated captured/imported entries, active days, tools used, first/last records, the top ten tools, and all twelve months. JSON and CLI also include first-recorded tools, a top newly recorded tool, current Catalog categories, low-activity favorites, previous-year comparisons and data sources. Executable aliases recorded with the same tool ID count as one tool; unknown executables remain visible. The current year is marked as in progress. Years from 1 through 9998 are accepted.
 
 Statistics use the device's local calendar time at report generation. Only captured invocations are counted: a zero means no records, and collection gaps cannot be reconstructed. Enable `cliary setup shell --enable` and open a new terminal to capture future commands; earlier commands are not imported. Command arguments are never stored. Reports are generated locally, require no AI or network connection, and do not modify usage events.
 
@@ -144,4 +144,4 @@ The GitHub Actions workflow validates PRs and publishes a new Catalog plus four 
 
 ## V0.1 boundaries
 
-Wrapped currently provides a factual annual summary. Data-backed special insights, year-over-year comparisons, export, semantic/AI search, user accounts, and automatic execution of installation commands are planned for later releases.
+Wrapped includes data-backed annual insights and comparison of recorded entries. Export, semantic/AI search, user accounts, and automatic execution of installation commands are planned for later releases.

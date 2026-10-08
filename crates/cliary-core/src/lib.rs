@@ -5,6 +5,7 @@ mod installed;
 mod paths;
 mod sync;
 mod user;
+mod wrapped_insights;
 
 use anyhow::{Context, Result};
 use rusqlite::Connection;
@@ -17,6 +18,9 @@ pub use history_import::{HistoryFormat, ImportReport, UndatedTool};
 pub use installed::InstalledTool;
 pub use paths::Paths;
 pub use user::FavoriteEntry;
+pub use wrapped_insights::{
+    FavoriteInsight, NewToolInsight, ToolChange, WrappedInsights, YearComparison,
+};
 
 #[derive(Clone, Debug)]
 pub struct Cliary {

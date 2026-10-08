@@ -970,8 +970,8 @@ fn main() -> Result<()> {
                         "  {}",
                         tr(
                             &lang,
-                            "Then open a new terminal. Earlier commands are not imported.",
-                            "然后打开新终端；不会导入之前的命令。"
+                            "Open a new terminal for capture; import existing history explicitly with import-history.",
+                            "打开新终端采集；旧历史可通过 import-history 显式导入。"
                         )
                     );
                 } else {
@@ -996,6 +996,96 @@ fn main() -> Result<()> {
                 for month in &report.monthly_activity {
                     println!("  {}  {}", month.name, month.count);
                 }
+                println!(
+                    "\n  {}: {}",
+                    tr(&lang, "First recorded this year", "本年首次记录的工具"),
+                    report.insights.new_tools_count
+                );
+                for item in &report.insights.new_tools {
+                    println!("  {} · {} · {}", item.name, item.runs, item.first_recorded);
+                }
+                if let Some(item) = &report.insights.breakout_tool {
+                    println!(
+                        "  {}: {} ({})",
+                        tr(
+                            &lang,
+                            "Top newly recorded tool",
+                            "年度新宠（新记录中最常用）"
+                        ),
+                        item.name,
+                        item.runs
+                    );
+                }
+                println!(
+                    "\n  {}",
+                    tr(
+                        &lang,
+                        "Categories (current Catalog; may overlap)",
+                        "分类（当前工具库，可重叠）"
+                    )
+                );
+                for item in &report.insights.top_categories {
+                    println!("  {}  {}", item.name, item.count);
+                }
+                println!(
+                    "\n  {}",
+                    tr(
+                        &lang,
+                        "Low activity favorites (saved >=90 days; <=2 entries after saving in year)",
+                        "低频收藏（已收藏至少90天，年度收藏后记录不超过2条）"
+                    )
+                );
+                for item in &report.insights.low_activity_favorites {
+                    println!("  {} · {} · {}", item.name, item.runs, item.favorited_at);
+                }
+                if let Some(c) = &report.insights.comparison {
+                    println!(
+                        "\n  {} {}: {} → {} ({})",
+                        tr(
+                            &lang,
+                            if c.year_to_date {
+                                "Same-period comparison"
+                            } else {
+                                "Year comparison"
+                            },
+                            if c.year_to_date {
+                                "上年同期对比"
+                            } else {
+                                "年度对比"
+                            }
+                        ),
+                        c.previous_year,
+                        c.previous_runs,
+                        c.current_runs,
+                        c.change_percent
+                            .map(|n| format!("{n:+.1}%"))
+                            .unwrap_or_else(|| tr(&lang, "no baseline", "无上年基数").into())
+                    );
+                    println!("  {} / {}", c.previous_end, c.current_end);
+                    for item in &report.insights.tool_changes {
+                        println!(
+                            "  {}: {} → {}",
+                            item.name, item.previous_runs, item.current_runs
+                        );
+                    }
+                }
+                println!("\n  {}", tr(&lang, "Record sources", "记录来源"));
+                for item in &report.insights.source_counts {
+                    println!("  {}  {}", item.name, item.count);
+                }
+                println!(
+                    "  {}: {}",
+                    tr(&lang, "Undated tools excluded", "未归入年份的无日期工具"),
+                    report.insights.undated_tools
+                );
+                println!(
+                    "  {}",
+                    tr(
+                        &lang,
+                        "Imported history entries may omit or merge executions. Changes describe records, not complete usage or replacement of tools.",
+                        "导入历史可能遗漏或合并调用。变化仅描述记录，不代表完整使用量或工具替代关系。"
+                    )
+                );
                 println!();
             }
         }
