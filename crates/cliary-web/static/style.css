@@ -1456,3 +1456,50 @@ p { line-height: 1.6; color: var(--muted); }
 
 :root:not([data-theme="dark"]) :is(.wrapped-intro, .wrapped-context, .wrapped-summary, .wrapped-scope, .wrapped-range, .wrapped-columns, .wrapped-insights, .wrapped-section) { --muted: #526c5f; }
 .wrapped-export .text-link { color: var(--green-dark); }
+
+/* Local history import follows the desktop workspace's existing form grammar. */
+.history-import { max-width: 920px; min-width: 0; }
+:root:not([data-theme="dark"]) :is(.history-import, .history-import-entry) { --muted: #526c5f; }
+.history-import .page-intro { margin-top: 20px; }
+.history-import p { max-width: 75ch; line-height: 1.65; }
+.import-source, .import-results, .import-notes { padding: 24px 0; border-top: 1px solid var(--line); }
+.history-import h2 { font-size: 18px; margin: 0 0 16px; }
+.history-import h3 { font-size: 14px; margin: 24px 0 10px; }
+.import-form { display: grid; gap: 20px; max-width: 760px; }
+.import-field { display: grid; gap: 8px; min-width: 0; }
+.import-field label { font-weight: 600; font-size: 14px; }
+.import-field input, .import-field select { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); caret-color: var(--green-dark); }
+.import-field input::placeholder { color: var(--muted); opacity: 1; }
+.import-fields { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 16px; }
+.import-caption, .import-counts small { color: var(--muted); font-size: 13px; }
+.import-form .btn { justify-self: start; }
+.import-custom { padding: 24px 0; border-top: 1px solid var(--line); }
+.history-import summary { cursor: pointer; font-weight: 600; }
+.history-import summary:focus-visible { outline: 2px solid var(--green-dark); outline-offset: 4px; }
+.import-custom[open] summary { margin-bottom: 20px; }
+.import-message { margin-bottom: 24px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-sunken); }
+.import-message h2 { margin-bottom: 8px; }
+.import-message p { margin: 0 0 8px; overflow-wrap: anywhere; }
+.import-message p:last-child { margin-bottom: 0; }
+.import-file { display: flex; align-items: baseline; gap: 16px; margin-bottom: 20px; }
+.import-file code { min-width: 0; overflow-wrap: anywhere; }
+.import-file span { font-size: 12px; color: var(--muted); }
+.import-counts { margin: 0; font-variant-numeric: tabular-nums; }
+.import-counts > div { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); padding: 12px 0; }
+.import-counts dt { font-weight: 600; font-size: 14px; }
+.import-counts small { display: block; font-weight: 400; margin-top: 4px; }
+.import-counts dd { margin: 0; font-size: 18px; font-weight: 600; }
+.import-tools { display: flex; gap: 8px 16px; flex-wrap: wrap; }
+.import-tools code, .import-aliases code { overflow-wrap: anywhere; }
+.import-aliases { padding-left: 20px; line-height: 1.8; }
+.import-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin: 24px 0 16px; }
+.history-import .btn, .history-import-entry .btn { font-size: 14px; transition: background-color 0.16s ease; }
+.history-import .btn-primary, .history-import-entry .btn-primary { color: #fff; background: #047857; text-decoration: none; }
+.history-import .btn-primary:hover, .history-import-entry .btn-primary:hover { background: #065f46; transform: none; color: #fff; }
+.history-import .btn:disabled { cursor: default; opacity: 0.55; transform: none; }
+.history-import .text-link { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.history-import-entry .wrapped-import-help { margin-top: 20px; }
+.history-import-entry { margin-top: 16px; }
+/* Outrank the incumbent main form button rule without changing other forms. */
+.history-import form[data-history-import] .btn.btn-primary { font-size: 14px; background: #047857; color: #fff; transition: background-color 0.16s ease; }
+.history-import form[data-history-import] .btn.btn-primary:hover { background: #065f46; transform: none; }

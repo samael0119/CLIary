@@ -67,6 +67,10 @@ The first interactive run offers an optional history guide after installed-tool 
 
 Run `cliary setup history` to reopen it at any time. The installer invokes this same guide when interactive; otherwise it prints the entry point. `install.sh --no-import-history` skips the guide, while `--no-history` skips both future capture and this guide. Reading/importing a historical file never enables future capture.
 
+**Web 操作**：打开「使用历史 → 导入旧历史」，选择检测到的文件或输入本机路径，点击「预览这份文件」，核对后再点击「确认导入」。可选填别名快照路径；成功后可查看历史与年报。预览保留10分钟（最多4份），重启后失效。确认使用已预览的解析快照，保存时重新去重；文件变化不会替换这次预览。导入页面不缓存到浏览器，程序也不保存原始命令。
+
+In the Web UI, choose **History → Import existing history**. Select a detected file or enter a local path, preview, then confirm. Optional alias snapshots resolve names such as `gst`. Previews last ten minutes, up to four at once, and are lost on restart; confirmation saves the reviewed snapshot and rechecks duplicate counts. Import pages use `Cache-Control: no-store`.
+
 首次交互运行会询问是否预览旧历史，再分别确认每份文件的导入；默认不导入。已有安装也会提示一次，跳过后可用 `cliary setup history` 重开。无日期记录只进入观察列表，不会被分配到某个年份；别名表仍须由日常 Shell 显式导出。
 
 ```sh

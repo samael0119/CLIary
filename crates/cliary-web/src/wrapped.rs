@@ -347,6 +347,7 @@ fn render_insights(
     )
     .unwrap();
     if !offline {
+        body.push_str(&crate::history_import::entry(lang));
         write!(body,"<details class='wrapped-import-help'><summary>{}</summary><p>{}</p><pre><code>cliary import-history --shell zsh --file \"$HISTFILE\"\ncliary import-history --shell zsh --file \"$HISTFILE\" --apply\ncliary history --undated</code></pre><p>{}</p></details>",tr(lang,"Bring in existing Shell history","导入已有 Shell 历史"),tr(lang,"Use your actual history file. Preview first, add --apply to import. Bash and Fish are supported with --shell bash / fish.","使用实际历史文件，先预览，添加 --apply 才导入。也支持 --shell bash / fish。"),tr(lang,"No arguments saved; complex entries are skipped. Repeated import does not accumulate duplicates.","不保存参数，复杂条目会跳过；重复导入不会重复累加。")).unwrap();
     }
     body.push_str("</section>");
@@ -448,6 +449,7 @@ mod tests {
             App {
                 core: Arc::new(core),
                 csrf: "test".into(),
+                imports: Default::default(),
             },
         )
     }

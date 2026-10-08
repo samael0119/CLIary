@@ -54,6 +54,7 @@ async fn export_validates_inputs_and_sets_private_download_headers() {
             .unwrap(),
         ),
         csrf: "test".into(),
+        imports: Default::default(),
     };
     let response = export(
         State(app.clone()),

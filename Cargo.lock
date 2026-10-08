@@ -366,6 +366,7 @@ dependencies = [
  "anyhow",
  "askama",
  "axum",
+ "chrono",
  "cliary-core",
  "hex",
  "rand",
