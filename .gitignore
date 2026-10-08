@@ -5,3 +5,6 @@
 *.db-wal
 .DS_Store
 
+
+# Local browser QA captures
+.impeccable/review/

@@ -11,6 +11,7 @@ pub struct WrappedInsights {
     pub new_tools_count: u64,
     pub breakout_tool: Option<NewToolInsight>,
     pub top_categories: Vec<CountItem>,
+    pub category_labels: BTreeMap<String, BTreeMap<String, String>>,
     pub low_activity_favorites: Vec<FavoriteInsight>,
     pub comparison: Option<YearComparison>,
     pub tool_changes: Vec<ToolChange>,
@@ -229,11 +230,17 @@ impl Cliary {
             .query_map(params![start,end],|r|Ok(CountItem{name:r.get(0)?,count:r.get(1)?}))?.collect::<rusqlite::Result<Vec<_>>>()?;
         let undated_tools =
             tx.query_row("SELECT COUNT(*) FROM history_undated", [], |r| r.get(0))?;
+        let category_labels = self
+            .categories()?
+            .into_iter()
+            .map(|c| (c.id, c.name))
+            .collect();
         Ok(WrappedInsights {
             new_tools,
             new_tools_count,
             breakout_tool,
             top_categories,
+            category_labels,
             low_activity_favorites,
             comparison,
             tool_changes,

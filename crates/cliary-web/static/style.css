@@ -1426,3 +1426,33 @@ p { line-height: 1.6; color: var(--muted); }
   .metric-grid, .cards, .tool-list, .category-grid { grid-template-columns: 1fr; }
   footer { flex-direction: column; text-align: center; padding: 14px; }
 }
+
+/* Annual insights extend the existing desktop report, without ornamental motion. */
+.wrapped-export { display: flex; align-items: center; gap: 18px; margin: -12px 0 24px; }
+.wrapped-export .btn { padding: 8px 14px; }
+.wrapped-insights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; margin-top: 32px; }
+.wrapped-section { min-width: 0; padding: 24px 0; border-top: 1px solid var(--line); }
+.wrapped-section h2 { font-size: 18px; margin: 0 0 8px; }
+.wrapped-section p { max-width: 75ch; line-height: 1.65; }
+.wrapped-detail-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.wrapped-detail-table th, .wrapped-detail-table td { padding: 12px 8px; border-bottom: 1px solid var(--line-subtle); text-align: right; overflow-wrap: anywhere; }
+.wrapped-detail-table th:first-child { text-align: left; padding-left: 0; }
+.wrapped-detail-table thead th { color: var(--muted); font-size: 12px; font-weight: 500; }
+.wrapped-detail-table tbody th { font-weight: 500; }
+.wrapped-detail-table time { font-size: 12px; }
+.wrapped-source-list { margin: 0; font-variant-numeric: tabular-nums; }
+.wrapped-source-list > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--line-subtle); }
+.wrapped-source-list dt { overflow-wrap: anywhere; }
+.wrapped-source-list dd { margin: 0; font-weight: 650; }
+.wrapped-comparison-total { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; }
+.wrapped-comparison-total span { margin-left: 12px; font-size: 13px; }
+.wrapped-breakout { margin: 16px 0; }
+.wrapped-section a, .wrapped-ranking a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.wrapped-section a:hover, .wrapped-ranking a:hover { color: var(--green-dark); }
+.wrapped-provenance { margin-top: 12px; }
+.wrapped-import-help { margin-top: 20px; }
+.wrapped-import-help summary { cursor: pointer; font-weight: 650; }
+.wrapped-import-help pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+:root:not([data-theme="dark"]) :is(.wrapped-intro, .wrapped-context, .wrapped-summary, .wrapped-scope, .wrapped-range, .wrapped-columns, .wrapped-insights, .wrapped-section) { --muted: #526c5f; }
+.wrapped-export .text-link { color: var(--green-dark); }

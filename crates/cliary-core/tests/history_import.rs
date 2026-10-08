@@ -198,3 +198,36 @@ fn version_one_migrates_without_losing_favorites_notes_or_usage() {
         2
     );
 }
+
+#[test]
+fn metafied_zsh_bytes_decode_and_failed_input_leaves_records_untouched() {
+    let (root, core) = app();
+    let path = root.path().join("metafied");
+    let command = ": 1704067200:0;git status 包含中文\n";
+    let mut encoded = Vec::new();
+    for byte in command.bytes() {
+        if byte >= 0x80 {
+            encoded.push(0x83);
+            encoded.push(byte ^ 32);
+        } else {
+            encoded.push(byte);
+        }
+    }
+    std::fs::write(&path, encoded).unwrap();
+    assert_eq!(
+        core.import_history(&path, HistoryFormat::Zsh, true)
+            .unwrap()
+            .new_timed,
+        1
+    );
+    std::fs::write(&path, [0x83]).unwrap();
+    assert!(
+        core.import_history(&path, HistoryFormat::Zsh, true)
+            .is_err()
+    );
+    assert!(
+        core.import_history(root.path(), HistoryFormat::Bash, true)
+            .is_err()
+    );
+    assert_eq!(core.history(None).unwrap().runs, 1);
+}

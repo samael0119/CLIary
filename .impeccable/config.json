@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "crates/cliary-web/src/wrapped_export_tests.rs"
+        ],
+        "createdAt": "2026-10-08T03:31:37.360Z",
+        "reason": "Agent: test-only negative HTML input <img> verifies escaping and invalid export recovery; this file is compiled only under cfg(test) and renders no images."
+      }
+    ]
+  }
+}

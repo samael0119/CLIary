@@ -92,11 +92,22 @@ cliary wrapped 2024 --json      # Structured report / 结构化报告
 cliary --lang zh-CN wrapped 2024
 ```
 
-In the Web UI, choose **Wrapped / 年度报告** from the sidebar, or visit `/wrapped?year=2024`. Reports show dated captured/imported entries, active days, tools used, first/last records, the top ten tools, and all twelve months. JSON and CLI also include first-recorded tools, a top newly recorded tool, current Catalog categories, low-activity favorites, previous-year comparisons and data sources. Executable aliases recorded with the same tool ID count as one tool; unknown executables remain visible. The current year is marked as in progress. Years from 1 through 9998 are accepted.
+In the Web UI, choose **Wrapped / 年度报告** from the sidebar, or visit `/wrapped?year=2024`. Reports show dated captured/imported entries, active days, tools used, first/last records, the top ten tools, and all twelve months. Web, JSON and CLI also include first-recorded tools, a top newly recorded tool, current Catalog categories, low-activity favorites, previous-year comparisons and data sources. Executable aliases recorded with the same tool ID count as one tool; unknown executables remain visible. The current year is marked as in progress. Years from 1 through 9998 are accepted.
 
-Statistics use the device's local calendar time at report generation. Only captured invocations are counted: a zero means no records, and collection gaps cannot be reconstructed. Enable `cliary setup shell --enable` and open a new terminal to capture future commands; earlier commands are not imported. Command arguments are never stored. Reports are generated locally, require no AI or network connection, and do not modify usage events.
+Statistics use the device's local calendar time at report generation. Only retained dated capture and imported history entries are counted: a zero means no records, not necessarily no usage. Shell history can omit or merge executions. Enable `cliary setup shell --enable` and open a new terminal to capture future commands; earlier commands are not imported. Command arguments are never stored. Reports are generated locally, require no AI or network connection, and do not modify usage events.
 
-网页侧栏选择「年度报告」，可切换年份查看真实调用量、活跃天数、常用工具与十二个月的趋势。数据来自已采集的调用，不代表完整使用历史；空月份不等于没有使用。当前年度会提示尚未结束。
+网页侧栏选择「年度报告」，可查看有日期的采集与导入记录、活跃天数、常用工具、新工具、年度新宠、分类、低频收藏、月度趋势与年度变化。记录不代表完整使用历史，空月份不等于没有使用。当前年按上年相同本地月日时刻对比，闰日收敛到上年2月28日；无上年基数时不计算增长比例。
+
+Save an offline report from the Web export links or the CLI:
+
+```sh
+cliary wrapped 2024 --output wrapped-2024.html
+cliary wrapped 2024 --output wrapped-2024.json --format json
+```
+
+HTML has embedded styles, no script, no external resources, and no app navigation links. It opens without CLIary running and can be printed from a browser. CLI exports create private files (0600 on Unix) and refuse to overwrite existing paths. Web exports use attachment headers and no-store caching. Exports include only aggregated report facts, never raw history, arguments or machine IDs.
+
+New tools mean first observation in retained dated records, not first installation. Low-activity favorites must still be saved, have been saved at least 90 days by the report cutoff, and have at most two entries after saving within the selected year. Categories use current Catalog metadata and can overlap. Record changes do not establish complete usage or replacement of one tool by another.
 
 Favorites survive Catalog updates that remove tools. `cliary favorites` and the Web Favorites page show unavailable entries by their saved ID; remove them with `cliary favorite <id> --remove --exact-id` or the page's **Remove favorite** button. Exact ID removal is safe to retry even if a different tool later uses that ID as an alias; ordinary `--remove` still supports current names and aliases. Removing a bookmark keeps notes and usage history. If the same ID returns to the Catalog, its tool details appear again. In `favorites --json`, available entries keep their Tool object shape; unavailable entries contain only `id` and `catalog_available: false` (tool metadata is absent). Core callers needing every bookmark should use `favorite_entries()`; `favorites()` returns only entries with current metadata.
 
@@ -144,4 +155,4 @@ The GitHub Actions workflow validates PRs and publishes a new Catalog plus four 
 
 ## V0.1 boundaries
 
-Wrapped includes data-backed annual insights and comparison of recorded entries. Export, semantic/AI search, user accounts, and automatic execution of installation commands are planned for later releases.
+Wrapped includes data-backed annual insights and comparison of recorded entries. Semantic/AI search, user accounts, and automatic execution of installation commands are planned for later releases.

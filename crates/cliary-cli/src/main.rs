@@ -85,6 +85,11 @@ enum Command {
     Wrapped {
         #[arg(allow_hyphen_values = true)]
         year: Option<i32>,
+        /// Save a private offline report; refuses to overwrite existing files.
+        #[arg(long, conflicts_with = "json")]
+        output: Option<std::path::PathBuf>,
+        #[arg(long, value_enum, requires = "output")]
+        format: Option<ReportFormat>,
     },
     Sync {
         #[arg(long)]
@@ -104,6 +109,12 @@ enum Command {
         #[command(subcommand)]
         command: InternalCommand,
     },
+}
+
+#[derive(Clone, Copy, clap::ValueEnum)]
+enum ReportFormat {
+    Html,
+    Json,
 }
 
 #[derive(Clone, Copy, clap::ValueEnum)]
@@ -932,8 +943,42 @@ fn main() -> Result<()> {
                 }
             }
         }
-        Command::Wrapped { year } => {
+        Command::Wrapped {
+            year,
+            output,
+            format,
+        } => {
             let report = core.wrapped(year)?;
+            if let Some(path) = output {
+                let body = match format.unwrap_or(ReportFormat::Html) {
+                    ReportFormat::Html => cliary_web::wrapped_html(&report, &lang),
+                    ReportFormat::Json => serde_json::to_string_pretty(&report)?,
+                };
+                let mut options = std::fs::OpenOptions::new();
+                options.write(true).create_new(true);
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::OpenOptionsExt;
+                    options.mode(0o600);
+                }
+                let mut file = options
+                    .open(&path)
+                    .context("cannot create report; choose a new output filename")?;
+                if let Err(error) = file
+                    .write_all(body.as_bytes())
+                    .and_then(|_| file.sync_all())
+                {
+                    drop(file);
+                    let _ = std::fs::remove_file(&path);
+                    return Err(error.into());
+                }
+                println!(
+                    "{}: {}",
+                    tr(&lang, "Report saved", "报告已保存"),
+                    path.display()
+                );
+                return Ok(());
+            }
             if args.json {
                 out(json!(report))?;
             } else {
@@ -946,7 +991,7 @@ fn main() -> Result<()> {
                 }
                 println!(
                     "  {}: {} · {}: {} · {}: {}",
-                    tr(&lang, "Captured runs", "已记录调用"),
+                    tr(&lang, "Recorded entries", "记录条数"),
                     report.total_runs,
                     tr(&lang, "Active days", "活跃天数"),
                     report.active_days,
@@ -954,8 +999,8 @@ fn main() -> Result<()> {
                     report.tools_used
                 );
                 println!("  {}", theme.dim(tr(&lang,
-                    "Local calendar time. Captured invocations only; gaps do not mean inactivity.",
-                    "按本地日历统计，仅包含已采集的调用；记录空缺不代表没有使用。")));
+                    "Local calendar time. Dated capture and imported entries; gaps do not mean inactivity.",
+                    "按本地日历统计，包含有日期的采集与导入记录；空缺不代表没有使用。")));
                 if report.total_runs == 0 {
                     println!(
                         "\n  {}",
@@ -991,7 +1036,7 @@ fn main() -> Result<()> {
                 }
                 println!(
                     "\n  {}",
-                    theme.bold(tr(&lang, "Captured runs by month", "每月已记录调用"))
+                    theme.bold(tr(&lang, "Recorded entries by month", "每月记录条数"))
                 );
                 for month in &report.monthly_activity {
                     println!("  {}  {}", month.name, month.count);
@@ -1025,7 +1070,17 @@ fn main() -> Result<()> {
                     )
                 );
                 for item in &report.insights.top_categories {
-                    println!("  {}  {}", item.name, item.count);
+                    println!(
+                        "  {}  {}",
+                        report
+                            .insights
+                            .category_labels
+                            .get(&item.name)
+                            .map(|n| localized(n, &lang))
+                            .filter(|s| !s.is_empty())
+                            .unwrap_or(&item.name),
+                        item.count
+                    );
                 }
                 println!(
                     "\n  {}",
