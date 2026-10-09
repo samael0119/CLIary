@@ -16,8 +16,8 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 BINARY = Path(os.environ.get('CLIARY_TEST_BINARY', ROOT / 'target/debug/cliary')).resolve()
 TARGETS = {
-    ('Linux', 'x86_64'): 'x86_64-unknown-linux-gnu',
-    ('Linux', 'aarch64'): 'aarch64-unknown-linux-gnu',
+    ('Linux', 'x86_64'): 'x86_64-unknown-linux-musl',
+    ('Linux', 'aarch64'): 'aarch64-unknown-linux-musl',
     ('Darwin', 'x86_64'): 'x86_64-apple-darwin',
     ('Darwin', 'arm64'): 'aarch64-apple-darwin',
 }
@@ -90,6 +90,22 @@ class InstallerTests(unittest.TestCase):
         self.assertIn('checksum mismatch', result.stderr)
         self.assertEqual(self.installed.read_bytes(), original)
 
+    @unittest.skipUnless(os.uname().sysname == 'Linux', 'GNU fallback is Linux-only')
+    def test_offline_prefers_musl_and_accepts_legacy_gnu(self):
+        legacy = self.archive.with_name(self.archive.name.replace('-musl.', '-gnu.'))
+        legacy.write_bytes(self.archive.read_bytes())
+        # A bogus legacy checksum cannot affect the preferred, valid static package.
+        with (self.assets / 'SHA256SUMS').open('a') as checksums:
+            checksums.write(f'{"0" * 64}  {legacy.name}\n')
+        result = self.install('--from', str(self.assets))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.archive.unlink()
+        self.archive = legacy
+        self.write_checksums()
+        result = self.install('--from', str(self.assets))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.installed.read_bytes(), BINARY.read_bytes())
+
     def test_symlink_archive_is_rejected(self):
         with tarfile.open(self.archive, 'w:gz') as archive:
             entry = tarfile.TarInfo('cliary')
@@ -135,8 +151,21 @@ else:
         calls = [json.loads(line) for line in (self.root / 'gh.jsonl').read_text().splitlines()]
         self.assertEqual(calls[0], ['release', 'view', '--repo', 'example/private-repo', '--json', 'tagName', '--jq', '.tagName'])
         self.assertEqual(calls[1][:3], ['release', 'download', 'v-test'])
-        self.assertIn(self.archive.name, calls[1])
         self.assertIn('SHA256SUMS', calls[1])
+        self.assertEqual(calls[2][:3], ['release', 'download', 'v-test'])
+        self.assertIn(self.archive.name, calls[2])
+
+    @unittest.skipUnless(os.uname().sysname == 'Linux', 'GNU fallback is Linux-only')
+    def test_private_legacy_gnu_release_is_still_installable(self):
+        legacy = self.archive.with_name(self.archive.name.replace('-musl.', '-gnu.'))
+        self.archive.rename(legacy)
+        self.archive = legacy
+        self.write_checksums()
+        self.fake_github()
+        result = self.install('--github')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        calls = [json.loads(line) for line in (self.root / 'gh.jsonl').read_text().splitlines()]
+        self.assertIn(legacy.name, calls[2])
 
     def test_private_failure_does_not_replace_binary(self):
         self.assertEqual(self.install('--from', str(self.assets)).returncode, 0)
