@@ -1,0 +1,23 @@
+{
+  "columns": 92,
+  "rows": 24,
+  "synthetic_history": true,
+  "timing": "Edited playback, not a benchmark",
+  "scenes": [
+    {
+      "title": "按任务搜索工具",
+      "command": "cliary --lang zh-CN search '磁盘空间'",
+      "output": "\n  工具名称               本地状态            描述\n  ────────────────────────────────────────────────────────────────────────\n  dua                ○ available    磁盘占用分析与清理工具。\n  dust               ○ available    在终端直观展示磁盘占用。\n  gdu                ○ available    快速交互式磁盘空间分析工具。\n  ncdu               ○ available    交互式磁盘占用分析工具，可查找大文件。\n\n  提示：运行 'cliary show <工具名>' 查看速查指令，或 'cliary web' 开启网页看板\n\n"
+    },
+    {
+      "title": "查看速查指令与安装方式",
+      "command": "cliary --lang zh-CN show ncdu",
+      "output": "\n╭─ ncdu  [尚未扫描] ─────────────────────────────────────────────────────────────╮\n│ 交互式磁盘占用分析工具，可查找大文件。\n│ \n│ 分类: 文件系统\n│ 协议: MIT\n│ 主页: https://dev.yorhel.nl/ncdu (https://dev.yorhel.nl/ncdu)\n│ 仓库: https://code.blicky.net/yorhel/ncdu (https://code.blicky.net/yorhel/ncdu)\n│ 标签: 磁盘, 存储, 终端界面, 交互式, 磁盘占用\n├─ 常用速查指令 ───────────────────────────────────────────────────────────────────┤\n│   $ ncdu /\n│   $ ncdu -x /\n├─ 安装方式 ─────────────────────────────────────────────────────────────────────┤\n│   apt:     sudo apt install ncdu\n│   brew:    brew install ncdu\n├─ 本地使用画像与心得 ────────────────────────────────────────────────────────────────┤\n│   累计运行: 207   活跃天数: 207 天\n│   首次使用: 2025-01-01 14:00:00   最近使用: 2026-10-08 12:04:00\n│   相似工具推荐: dua, gdu, dust, du, eza, ls\n╰──────────────────────────────────────────────────────────────────────────╯\n\n"
+    },
+    {
+      "title": "横向比较工具特性",
+      "command": "cliary --lang zh-CN compare ncdu dust",
+      "output": "\n  工具横向对比\n  ────────────────────────────────────────────────────────────────────────\n  对比维度            ncdu                      dust                    \n  ────────────────────────────────────────────────────────────────────────\n  安装状态            尚未扫描                      尚未扫描                    \n  版本号             —                         —                       \n  包来源             —                         —                       \n  开发语言            Zig / C                   Rust                    \n  开源协议            MIT                       Apache-2.0              \n  支持平台            linux, macos              linux, macos            \n  维护状态            active                    active                  \n  删除文件            支持                        不支持                     \n  交互操作            支持                        不支持                     \n  并行扫描            支持                        未记录                     \n  终端界面            支持                        不支持                     \n\n  特性来自工具库；未记录不等于不支持。安装状态基于已保存扫描。\n\n  ncdu\n  交互式磁盘占用分析工具，可查找大文件。\n  安装包: apt:ncdu\n  安装包: brew:ncdu\n  仓库: https://code.blicky.net/yorhel/ncdu\n  工具库命令示例（不会执行）：\n    ncdu /\n    ncdu -x /\n\n  dust\n  在终端直观展示磁盘占用。\n  安装包: brew:dust\n  安装包: cargo:du-dust\n  安装包: snap:dust\n  仓库: https://github.com/bootandy/dust\n  工具库命令示例（不会执行）：\n    dust\n    dust -n 10\n\n"
+    }
+  ]
+}
