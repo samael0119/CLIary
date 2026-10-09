@@ -73,6 +73,21 @@ If you skip scanning, installation status remains **Not scanned** until you run 
 
 ### Install from a private release or offline package
 
+Linux release packages use statically linked musl binaries, with **no glibc runtime dependency**. This first release provides a Linux x86_64 package; macOS and ARM64 can be built from source pending native package validation.
+
+Linux 发布包使用 musl 静态链接，无需安装 glibc 或 musl 运行库。首发提供已验证的 Linux x86_64 安装包；macOS／ARM64 暂以源码构建使用。
+
+To reproduce the static Linux x86_64 build, install `musl-tools` on Debian/Ubuntu, then:
+
+```sh
+rustup target add x86_64-unknown-linux-musl
+CC_x86_64_unknown_linux_musl=musl-gcc \
+CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc \
+cargo build --release --locked --target x86_64-unknown-linux-musl -p cliary-cli
+```
+
+The resulting executable is `target/x86_64-unknown-linux-musl/release/cliary`. Release packaging strips unused symbols; it does not require Rust, SQLite, glibc or a musl loader to be installed on the destination computer. Operating-system utilities used by optional scanning and Shell integration remain separate requirements.
+
 The current repository is private. Anonymous `curl` downloads do not work for its releases. After a release is published, use GitHub CLI with repository access:
 
 ```sh
@@ -91,6 +106,8 @@ sh scripts/install.sh --from /path/to/release-assets
 ```
 
 The directory must contain `cliary-<platform-target>.tar.gz` (with a `cliary` binary) and `SHA256SUMS`. A checksum failure leaves the installed binary untouched. Upgrades replace the binary atomically and preserve personal databases and configuration; restart a running Web server afterward to use the new binary. Existing Shell hooks stay in place; run `cliary setup shell --enable` to update them if upgrading from an older hook implementation.
+
+On Linux, the installer prefers `cliary-x86_64-unknown-linux-musl.tar.gz` (or the corresponding ARM64 target). It reads the fixed release's checksums first and also accepts an older `*-unknown-linux-gnu.tar.gz` package when a musl entry is absent, including offline installs. Both paths verify checksums. GNU packages retain their own glibc requirements.
 
 私有仓库使用已登录的 `gh` 下载；离线安装使用 `--from`。默认仍会询问扫描、未来历史采集与旧历史预览；不自动导入旧历史。
 

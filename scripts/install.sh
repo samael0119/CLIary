@@ -40,9 +40,10 @@ else
 fi
 case "$tag" in -*) printf '%s\n' 'Release tag cannot start with a dash.' >&2; exit 2 ;; esac
 
+legacy_target=''
 case "$(uname -s):$(uname -m)" in
-  Linux:x86_64) target=x86_64-unknown-linux-gnu ;;
-  Linux:aarch64|Linux:arm64) target=aarch64-unknown-linux-gnu ;;
+  Linux:x86_64) target=x86_64-unknown-linux-musl; legacy_target=x86_64-unknown-linux-gnu ;;
+  Linux:aarch64|Linux:arm64) target=aarch64-unknown-linux-musl; legacy_target=aarch64-unknown-linux-gnu ;;
   Darwin:x86_64) target=x86_64-apple-darwin ;;
   Darwin:arm64) target=aarch64-apple-darwin ;;
   *) printf '%s\n' 'Unsupported operating system or architecture.' >&2; exit 2 ;;
@@ -55,7 +56,6 @@ trap 'rm -rf "$temp_dir"; [ -z "$install_temp" ] || rm -f "$install_temp"' EXIT
 trap 'exit 130' INT
 trap 'exit 143' HUP TERM
 if [ -n "$from_dir" ]; then
-  cp "$from_dir/$archive" "$temp_dir/$archive"
   cp "$from_dir/SHA256SUMS" "$temp_dir/SHA256SUMS"
 elif [ "$github" = yes ]; then
   command -v gh >/dev/null 2>&1 || { printf '%s\n' 'Private downloads require GitHub CLI (gh). Install it and run gh auth login, or use --from DIRECTORY.' >&2; exit 1; }
@@ -66,18 +66,28 @@ elif [ "$github" = yes ]; then
     }
   fi
   case "$tag" in ''|-*) printf '%s\n' 'Invalid release tag.' >&2; exit 1 ;; esac
-  gh release download "$tag" --repo "$repo" --pattern "$archive" --pattern SHA256SUMS --dir "$temp_dir"
+  gh release download "$tag" --repo "$repo" --pattern SHA256SUMS --dir "$temp_dir"
 else
   if [ -n "$tag" ]; then
     base="https://github.com/$repo/releases/download/$tag"
   else
     base="https://github.com/$repo/releases/latest/download"
   fi
-  curl --proto '=https' --proto-redir '=https' --connect-timeout 15 --max-time 120 --fail --location --silent --show-error "$base/$archive" -o "$temp_dir/$archive"
   curl --proto '=https' --proto-redir '=https' --connect-timeout 15 --max-time 120 --fail --location --silent --show-error "$base/SHA256SUMS" -o "$temp_dir/SHA256SUMS"
+fi
+# Prefer static Linux assets; still accept GNU packages from older releases.
+if [ -n "$legacy_target" ] && ! awk -v file="$archive" '$2 == file {found=1} END {exit !found}' "$temp_dir/SHA256SUMS"; then
+  archive="cliary-$legacy_target.tar.gz"
 fi
 expected=$(awk -v file="$archive" '$2 == file {print $1}' "$temp_dir/SHA256SUMS")
 printf '%s\n' "$expected" | awk 'length($0) == 64 && $0 !~ /[^0-9a-f]/ {ok++} END {exit ok != 1}' || { printf '%s\n' 'Release checksum is missing.' >&2; exit 1; }
+if [ -n "$from_dir" ]; then
+  cp "$from_dir/$archive" "$temp_dir/$archive"
+elif [ "$github" = yes ]; then
+  gh release download "$tag" --repo "$repo" --pattern "$archive" --dir "$temp_dir"
+else
+  curl --proto '=https' --proto-redir '=https' --connect-timeout 15 --max-time 120 --fail --location --silent --show-error "$base/$archive" -o "$temp_dir/$archive"
+fi
 if command -v sha256sum >/dev/null 2>&1; then
   actual=$(sha256sum "$temp_dir/$archive" | awk '{print $1}')
 else
