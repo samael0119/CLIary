@@ -1,55 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+: "${RUNNER_TEMP:?Run this script in GitHub Actions}"
+ci_root="$RUNNER_TEMP/cliary-ci"
+export RUSTUP_HOME="$ci_root/rustup"
+export CARGO_HOME="$ci_root/cargo"
+export TMPDIR="$ci_root/tmp"
+export XDG_CACHE_HOME="$ci_root/cache"
+export ZIG_GLOBAL_CACHE_DIR="$ci_root/cache/zig"
+export CARGO_ZIGBUILD_CACHE_DIR="$ci_root/cache/cargo-zigbuild"
+export CLIARY_CONFIG_DIR="$ci_root/config"
+export CLIARY_DATA_DIR="$ci_root/data"
+export CLIARY_CACHE_DIR="$ci_root/cache/cliary"
+export CARGO_BUILD_JOBS=2
+export CARGO_INCREMENTAL=0
+export CARGO_PROFILE_DEV_DEBUG=0
+export CARGO_PROFILE_TEST_DEBUG=0
+export CARGO_PROFILE_RELEASE_STRIP=symbols
+export PIP_NO_CACHE_DIR=1
+export PYTHONDONTWRITEBYTECODE=1
+mkdir -p "$TMPDIR" "$XDG_CACHE_HOME" dist .ci-reports
 export PATH="$CARGO_HOME/bin:$PWD/.ci-venv/bin:$PATH"
 export RUSTUP_TOOLCHAIN=1.94.1
 export CARGO_ZIGBUILD_PYTHON_PATH="$PWD/.ci-venv/bin/python"
-mkdir -p dist .ci-reports
-report_resources() {
-  python3 - <<'PY'
-import json, os
-from pathlib import Path
-cgroup = next(line.split(':', 2)[2] for line in Path('/proc/self/cgroup').read_text().splitlines() if line.startswith('0:'))
-directory = Path('/sys/fs/cgroup') / cgroup.lstrip('/')
-def read_number(name):
-    path = directory / name
-    return int(path.read_text()) if path.exists() else None
-disk = os.statvfs('.')
-report = {'memory_peak_bytes': read_number('memory.peak'),
-          'swap_peak_bytes': read_number('memory.swap.peak'),
-          'memory_events': (directory / 'memory.events').read_text(),
-          'cpu_stat': (directory / 'cpu.stat').read_text(),
-          'work_disk_used_bytes': (disk.f_blocks - disk.f_bfree) * disk.f_frsize}
-Path('.ci-reports/resources.json').write_text(json.dumps(report, indent=2) + '\n')
-print(json.dumps(report, indent=2))
-PY
-  df -h .
-  du -sh target "$RUSTUP_HOME" "$CARGO_HOME" .ci-venv .ci-sdk 2>/dev/null || true
-}
-trap report_resources EXIT
-
-python3 - <<'PY'
-import os
-from pathlib import Path
-cgroup = next(line.split(':', 2)[2] for line in Path('/proc/self/cgroup').read_text().splitlines() if line.startswith('0:'))
-directory = Path('/sys/fs/cgroup') / cgroup.lstrip('/')
-for name, expected in [('memory.max', 500 * 1024**2), ('memory.swap.max', 1024**3)]:
-    actual = (directory / name).read_text().strip()
-    if actual != str(expected):
-        raise SystemExit(f'Resource limit not enforced: {name}={actual}, expected {expected}')
-quota, period = (directory / 'cpu.max').read_text().split()
-if quota != period:
-    raise SystemExit(f'CPU quota not enforced: {quota}/{period}')
-disk = os.statvfs('.')
-if disk.f_blocks * disk.f_frsize > 5 * 1024**3:
-    raise SystemExit('Build filesystem exceeds the 5 GiB limit')
-print('Verified kernel limits: 500 MiB RAM, 1 GiB swap, 1 CPU, at most 5 GiB build disk')
-PY
+echo "Runner: ${RUNNER_ENVIRONMENT:-unknown} / ${RUNNER_OS:-unknown} / ${RUNNER_ARCH:-unknown}"
+free -m
+df -h .
 
 python3 -m venv .ci-venv
 python -m pip install --disable-pip-version-check \
-  PyYAML==6.0.2 jsonschema==4.23.0 tomli==2.2.1 \
-  cargo-zigbuild==0.23.4 ziglang==0.16.0
+  PyYAML==6.0.2 jsonschema==4.23.0 tomli==2.2.1
 
 rustup_url=https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init
 curl --fail --location --retry 3 "$rustup_url" -o "$TMPDIR/rustup-init"
@@ -57,13 +37,13 @@ curl --fail --location --retry 3 "$rustup_url.sha256" -o "$TMPDIR/rustup-init.sh
 (cd "$TMPDIR"; sha256sum --check rustup-init.sha256)
 chmod +x "$TMPDIR/rustup-init"
 "$TMPDIR/rustup-init" -y --no-modify-path --profile minimal --default-toolchain "$RUSTUP_TOOLCHAIN"
+rustup component add rustfmt --toolchain "$RUSTUP_TOOLCHAIN"
 rm "$TMPDIR/rustup-init" "$TMPDIR/rustup-init.sha256"
 rustc --version
-cargo zigbuild --version
-python -m ziglang version
 
 python scripts/validate_catalog.py
 python scripts/test_ci_package.py
+cargo fmt --all -- --check
 cargo run --locked -p cliary-catalog --bin cliary-catalog-build -- validate
 cargo test --workspace --locked
 bash -n crates/cliary-cli/shell/bash.sh
@@ -71,6 +51,9 @@ zsh -n crates/cliary-cli/shell/zsh.sh
 fish -n crates/cliary-cli/shell/fish.fish
 
 if [[ "$CLIARY_PACKAGE" != true ]]; then exit 0; fi
+python -m pip install --disable-pip-version-check cargo-zigbuild==0.23.4 ziglang==0.16.0
+cargo zigbuild --version
+python -m ziglang version
 # Catalog is bundled into the program; release assets contain executables only.
 rm -rf target/debug
 targets=(x86_64-unknown-linux-musl aarch64-unknown-linux-musl)

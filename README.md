@@ -56,6 +56,8 @@ Capture provenance and demo setup: [screenshots](docs/screenshots/README.md).
 
 ## Build and try
 
+CI uses Rust 1.94.1. See [Contributing](CONTRIBUTING.md) for the pinned toolchain and validation setup.
+
 ```sh
 cargo build --release -p cliary-cli
 target/release/cliary search "disk usage"
@@ -73,7 +75,7 @@ If you skip scanning, installation status remains **Not scanned** until you run 
 
 ### Download and run / 直接下载运行
 
-在已登录 GitHub 且有仓库访问权限的浏览器中，直接下载对应架构的单文件程序：
+从 [Releases](https://github.com/samael0119/CLIary/releases) 下载对应平台的单文件程序，SHA-256 校验和列在发布说明中：
 
 | 平台 | 二进制下载 |
 | --- | --- |
@@ -295,22 +297,28 @@ This preserves favorites, notes, the installed snapshot and usage history in `us
 Add one YAML file under `catalog/tools/<category>/`. English description and at least one executable are required; Simplified Chinese descriptions are encouraged. Categories and tags use stable IDs in `catalog/i18n/`. Validate locally:
 
 ```sh
-python3 -m pip install PyYAML jsonschema
-python3 scripts/validate_catalog.py
+python3 -m venv /tmp/cliary-catalog-venv
+/tmp/cliary-catalog-venv/bin/python -m pip install PyYAML==6.0.2 jsonschema==4.23.0
+/tmp/cliary-catalog-venv/bin/python scripts/validate_catalog.py
 cargo run -p cliary-catalog --bin cliary-catalog-build -- validate
 cargo test --workspace
 ```
 
-### Self-hosted CI / 自托管构建
+### GitHub-hosted CI / 托管构建
 
-GitHub Actions 使用标签为 `self-hosted, Linux, X64` 的 runner。PR 运行验证；main 更新和手动运行串行构建 Linux x86_64／ARM64，默认也交叉编译 macOS Intel／Apple Silicon。手动运行时可取消 `build_macos`。macOS SDK 固定为 11.3，部署目标为 macOS 13.0；交叉编译产物检查架构、最低系统版本和系统库依赖，尚需 Mac 实机验收。
+GitHub Actions 使用 `ubuntu-24.04` 托管虚拟机。PR（含 fork PR）运行格式、Catalog、Rust 测试和 Shell 语法验证；PR 作业只读且不发布资产。main 更新和手动运行串行构建 Linux x86_64／ARM64，默认也交叉编译 macOS Intel／Apple Silicon。手动运行时可取消 `build_macos`。macOS SDK 固定为 11.3，部署目标为 macOS 13.0；交叉编译产物检查架构、最低系统版本和系统库依赖，尚需 Mac 实机验收。
 
-构建进程由 systemd／cgroup v2 限制为 **500 MiB RAM、最多 1 GiB swap、一个 CPU**；Rust 工具链、SDK、临时文件和输出放入 **5 GiB 独立工作盘**。runner 服务、操作系统和基础软件包不计入这些构建额度。首次运行需至少 5 GiB 可用磁盘；RAM／swap 超限或工作盘写满会失败，不自动提高限制。目标之间清理中间产物，结束时停止构建进程并卸载、删除工作盘。构建日志／reports 记录实际限制、CPU 和可用的峰值指标。
-
-runner 需启用 cgroup v2、systemd，运行用户须为 root 或可免密 sudo，以创建工作盘和受限服务。Debian／Ubuntu 缺少构建基础依赖时自动安装；不支持的环境会明确报错。工作流最长 3 小时，受限服务最长 150 分钟。网络下载与 swap 可能显著增加首次运行耗时。
+构建使用临时工具链、配置和数据目录，不接触个人历史；目标之间清理中间产物。每个构建作业最长 90 分钟，耗时和进程最大 RSS 由 `time` 写入构建报告。资源由 GitHub 托管环境提供，工作流不使用个人 VPS、loop 挂载或 systemd 资源限额。Actions 依赖固定到完整提交号。
 
 main 的成功构建发布为预发布版本，**不替换正式 latest**。Release 仅上传二进制，校验和写入说明；详细构建报告作为保留 3 天的 Actions artifact。此 Release 不提供远程 Catalog 更新资产，程序使用内置 Catalog；可用 `cliary sync --bundled` 刷新内置数据。自行配置的 Catalog 服务仍使用 manifest 和 SHA-256 校验。
 
 ## V0.1 boundaries
 
 Wrapped includes data-backed annual insights and comparison of recorded entries. Semantic/AI search, user accounts, and automatic execution of installation commands are planned for later releases.
+
+## Contributing and support / 贡献与反馈
+
+- [Contributing](CONTRIBUTING.md): development setup, Catalog changes and pull requests.
+- [Issues](https://github.com/samael0119/CLIary/issues): reproducible bugs and focused feature requests. Use synthetic examples; do not upload personal history or databases.
+- [Security](SECURITY.md): privately report vulnerabilities and understand the local data boundaries.
+- [MIT license](LICENSE): project license. Third-party components retain their own licenses; the vendored htmx notice is in `crates/cliary-web/static/htmx.LICENSE`.

@@ -4,6 +4,14 @@
 *.db-shm
 *.db-wal
 .DS_Store
+/dist/
+/.ci-venv/
+/.ci-sdk/
+/.ci-reports/
+/scripts/__pycache__/
+/.env
+/.env.*
+!/.env.example
 
 # Local development records and prototypes (see docs/README.md)
 /docs/dev/
