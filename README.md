@@ -71,6 +71,24 @@ target/release/cliary web
 
 If you skip scanning, installation status remains **Not scanned** until you run `cliary scan`.
 
+### Download and run / 直接下载运行
+
+在已登录 GitHub 且有仓库访问权限的浏览器中，直接下载对应架构的单文件程序：
+
+| Linux 架构 | 二进制下载 |
+| --- | --- |
+| x86_64（常见 Intel／AMD 电脑） | [cliary-linux-x86_64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-linux-x86_64) |
+| ARM64 | [cliary-linux-arm64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-linux-arm64) |
+
+无需解压或运行安装脚本。浏览器下载通常不保留可执行权限，可在文件属性中允许执行，或在下载目录运行（ARM64 替换文件名）：
+
+```sh
+chmod +x cliary-linux-x86_64
+./cliary-linux-x86_64 web
+```
+
+打开 `http://127.0.0.1:8848` 即可使用 Web 页面；首次交互运行仍会提供扫描和历史设置指引。命令行使用可将 `web` 换成 `search 磁盘空间` 等子命令。下载同一 Release 的 `SHA256SUMS` 后，可用 `sha256sum --ignore-missing --check SHA256SUMS` 校验。需要全局 `cliary` 命令时，可将文件命名为 `cliary` 并放入 PATH 目录，或使用下面的安装器。
+
 ### Install from a private release or offline package
 
 Linux release packages use statically linked musl binaries, with **no glibc runtime dependency**. The [v0.1.0 Release](https://github.com/samael0119/CLIary/releases/tag/v0.1.0) provides Linux x86_64 and ARM64 packages; macOS can be built from source pending native package validation.
