@@ -73,9 +73,9 @@ If you skip scanning, installation status remains **Not scanned** until you run 
 
 ### Install from a private release or offline package
 
-Linux release packages use statically linked musl binaries, with **no glibc runtime dependency**. This first release provides a Linux x86_64 package; macOS and ARM64 can be built from source pending native package validation.
+Linux release packages use statically linked musl binaries, with **no glibc runtime dependency**. The [v0.1.0 Release](https://github.com/samael0119/CLIary/releases/tag/v0.1.0) provides Linux x86_64 and ARM64 packages; macOS can be built from source pending native package validation.
 
-Linux 发布包使用 musl 静态链接，无需安装 glibc 或 musl 运行库。首发提供已验证的 Linux x86_64 安装包；macOS／ARM64 暂以源码构建使用。
+Linux 发布包使用 musl 静态链接，无需安装 glibc 或 musl 运行库。首发提供 Linux x86_64 和 ARM64 安装包；ARM64 经 QEMU 验证，尚未进行实机验收。macOS 暂以源码构建使用。
 
 To reproduce the static Linux x86_64 build, install `musl-tools` on Debian/Ubuntu, then:
 
