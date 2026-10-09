@@ -7,6 +7,8 @@
 | 位置 | 用途 |
 | --- | --- |
 | [根目录 README](../README.md) | 使用、安装、构建、贡献与功能限制 |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | 开发环境、验证、Catalog 贡献与 PR 要求 |
+| [SECURITY.md](../SECURITY.md) | 私密漏洞报告与产品数据边界 |
 | [PRODUCT.md](../PRODUCT.md) | 当前产品范围与约束 |
 | [CLIary_PRD.md](CLIary_PRD.md) | 产品需求说明 |
 | `docs/releases/` | 随版本发布的安装说明、变更与已知限制 |

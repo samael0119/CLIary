@@ -90,12 +90,14 @@ def main():
     info = {'version': version, 'source_commit': os.environ['GITHUB_SHA'],
             'rustc': subprocess.check_output(['rustc', '--version'], text=True).strip(),
             'cargo_zigbuild': '0.23.4', 'zig': '0.16.0',
-            'memory_max_bytes': 500 * 1024**2, 'swap_max_bytes': 1024**3,
-            'work_disk_bytes': 5 * 1024**3, 'platforms': platforms}
+            'runner': {'environment': os.environ.get('RUNNER_ENVIRONMENT', 'unknown'),
+                       'os': os.environ.get('RUNNER_OS', 'unknown'),
+                       'arch': os.environ.get('RUNNER_ARCH', 'unknown')},
+            'platforms': platforms}
     (reports / 'BUILDINFO.json').write_text(json.dumps(info, indent=2) + '\n')
     notes = [f'CLIary {version} 自动构建（预发布）', '', f'源码提交：{info["source_commit"]}', '',
              '直接下载对应平台的二进制，设置执行权限后运行。Linux 为 musl 静态包。',
-             'macOS 需要 13.0 或更新版本；交叉编译包尚未经过 Mac 实机验收。' if any('apple' in p for p in platforms) else '',
+             'macOS 需要 13.0 或更新版本；交叉编译包尚未经过 Mac 实机验收、Apple Developer ID 签名或公证。' if any('apple' in p for p in platforms) else '',
              '', 'SHA-256：', '', '```text']
     notes += [f'{p["sha256"]}  {p["asset"]}' for p in platforms.values()]
     notes += ['```', '']
