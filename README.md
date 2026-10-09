@@ -5,6 +5,55 @@
 
 CLIary is a local-first catalog, shelf, and usage diary for command-line tools on Linux and macOS. The Rust CLI and local Web UI share the same Core and SQLite data. There is no account or required server.
 
+## CLI demo / 命令行演示
+
+Search by task, inspect a tool, then compare alternatives. This 36-second loop replays real CLI output from an isolated demo workspace; usage counts are synthetic, installation status is **Not scanned**, and playback timing is edited for readability.
+
+按任务搜索 → 查看 ncdu 速查指令 → 比较 ncdu 与 dust。实际命令输出，独立演示环境、人工使用记录；播放节奏经过调整，不代表执行耗时。
+
+![CLIary CLI demo: search disk tools, show ncdu, and compare ncdu with dust](docs/screenshots/cli-demo.gif)
+
+Prefer a still image? See the Web screenshots below. [Transcript and reproduction instructions](docs/screenshots/README.md#cli-gif).
+
+## Web preview / 界面预览
+
+Desktop Web UI with Chinese/English and dark/light themes. These captures use an isolated workspace with **synthetic usage history**, not personal records; Catalog facts come from the bundled data. Installation status is deliberately **Not scanned**.
+
+截图使用独立演示工作区和**人工使用历史**，不包含个人记录；工具信息来自真实内置 Catalog，安装状态保留「尚未扫描」。
+
+### Overview / 工作台概览
+
+![CLIary desktop overview in dark mode, with synthetic favorites and recent tool usage](docs/screenshots/overview-dark.jpg)
+
+<details>
+<summary>更多截图：任务搜索、工具比较、年度报告 / More screenshots</summary>
+
+### Search by task / 按任务找工具
+
+Describe a task without remembering the tool name; ranking is local and requires no model.
+
+![CLIary light-mode search results for a Chinese disk-space task](docs/screenshots/search-light.jpg)
+
+### Compare tools / 工具横向对比
+
+Compare recorded features while keeping unsupported and unrecorded values distinct.
+
+![CLIary comparison of ncdu, gdu and dust in light mode](docs/screenshots/compare-light.jpg)
+
+### Annual report / 年度报告
+
+Review dated observations, monthly trends and data-backed insights; export locally as HTML/JSON.
+
+![CLIary dark-mode 2025 annual report generated from synthetic history](docs/screenshots/wrapped-dark.jpg)
+
+</details>
+
+Use **Ctrl+K** on Linux/Windows, **⌘K** on macOS, or **/** outside an editor to focus global search. Clicking the top-right search link does the same. Typing `/` in an input, textarea or editable region remains ordinary text input.
+
+Linux／Windows 用 **Ctrl+K**，macOS 用 **⌘K**；未编辑文本时也可按 **/**。右上角点击与快捷键使用同一入口，跨页后自动聚焦。
+
+Capture provenance and demo setup: [screenshots](docs/screenshots/README.md).
+
 ## Build and try
 
 ```sh

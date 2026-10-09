@@ -51,9 +51,9 @@
           <strong>{{ display_title }}</strong>
         </div>
         <div class="topbar-actions">
-          <a href="/search" class="quick-search-kbd" title="快捷搜索 (快捷键 ⌘K / /)">
+          <a href="/search" class="quick-search-kbd" data-search-shortcut aria-keyshortcuts="Control+k Meta+k /" title="{% if lang == "zh-CN" %}快捷搜索（Ctrl+K 或 /）{% else %}Quick search (Ctrl+K or /){% endif %}">
             <span>⌕ {% if lang == "zh-CN" %}快捷搜索{% else %}Search{% endif %}</span>
-            <span class="kbd-tag">⌘K</span>
+            <span class="kbd-tag">Ctrl K</span>
           </a>
           <button class="theme-btn" id="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">🌙</button>
           <span class="topbar-private"><span class="local-dot" style="width:6px; height:6px;"></span>{% if lang == "zh-CN" %}本地运行{% else %}Local only{% endif %}</span>
@@ -94,9 +94,43 @@
       }).catch(function(){});
     }
 
+    function activateQuickSearch() {
+      // Installed-page filters are not the global Catalog search.
+      var input = document.querySelector('.hero-search input[name="q"], .search-form input[name="q"]');
+      if (input && !input.disabled) {
+        input.focus();
+        input.select();
+      } else {
+        window.location.assign('/search#quick-search');
+      }
+    }
+
+    function updateSearchShortcutHint() {
+      var link = document.querySelector('[data-search-shortcut]');
+      if (!link) return;
+      var platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '';
+      var mac = /mac/i.test(platform);
+      link.querySelector('.kbd-tag').textContent = mac ? '⌘ K' : 'Ctrl K';
+      var shortcut = mac ? '⌘K' : 'Ctrl+K';
+      link.title = document.documentElement.lang === 'zh-CN'
+        ? '快捷搜索（' + shortcut + ' 或 /）'
+        : 'Quick search (' + shortcut + ' or /)';
+    }
+    updateSearchShortcutHint();
+    if (window.location.pathname === '/search' && window.location.hash === '#quick-search') {
+      var quickSearchInput = document.querySelector('.search-form input[name="q"]:not(:disabled)');
+      if (quickSearchInput) { quickSearchInput.focus(); quickSearchInput.select(); }
+    }
+
     if (!window.__cliaryInteractionsBound) {
       window.__cliaryInteractionsBound = true;
       document.addEventListener('click', function(e) {
+        var searchLink = e.target.closest('[data-search-shortcut]');
+        if (searchLink && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+          e.preventDefault();
+          activateQuickSearch();
+          return;
+        }
         var btn = e.target.closest('button[data-copy]');
         if (btn) copySnippet(btn, btn.getAttribute('data-copy'));
       });
@@ -117,12 +151,15 @@
           if (btn) { btn.textContent = btn.dataset.readyText; btn.disabled = false; }
         });
       });
+      document.addEventListener('htmx:afterSwap', updateSearchShortcutHint);
       document.addEventListener('keydown', function(e) {
-        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        if (e.defaultPrevented || e.isComposing || e.repeat) return;
+        var modifierSearch = (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k';
+        var editing = e.target instanceof Element && (e.target.isContentEditable || e.target.closest('input, textarea, select'));
+        var slashSearch = e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey && !editing;
+        if (modifierSearch || slashSearch) {
           e.preventDefault();
-          var inp = document.querySelector('input[name="q"]');
-          if (inp) inp.focus();
-          else window.location.href = '/search';
+          activateQuickSearch();
         }
       });
     }

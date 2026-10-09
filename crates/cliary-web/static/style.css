@@ -478,9 +478,8 @@ p { line-height: 1.6; color: var(--muted); }
 }
 .hero h1 em {
   font-style: normal;
-  background: linear-gradient(90deg, #6ee7b7, #38bdf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #6ee7b7;
+  -webkit-text-fill-color: currentColor;
 }
 .hero p { max-width: 480px; color: #cbdad2; font-size: 13px; line-height: 1.6; margin-bottom: 20px; }
 
@@ -1172,7 +1171,6 @@ p { line-height: 1.6; color: var(--muted); }
   display: block;
   background: linear-gradient(90deg, #10b981, #059669);
   border-radius: inherit;
-  transition: width 0.3s ease;
 }
 .chart-val {
   width: 36px;
