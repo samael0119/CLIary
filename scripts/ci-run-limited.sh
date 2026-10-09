@@ -68,6 +68,7 @@ case "${1:-}" in
       --setenv="TMPDIR=$ci_root/work/tmp" \
       --setenv="XDG_CACHE_HOME=$ci_root/work/cache" \
       --setenv="ZIG_GLOBAL_CACHE_DIR=$ci_root/work/cache/zig" \
+      --setenv="CARGO_ZIGBUILD_CACHE_DIR=$ci_root/work/cache/cargo-zigbuild" \
       --setenv="CLIARY_CONFIG_DIR=$ci_root/work/config" \
       --setenv="CLIARY_DATA_DIR=$ci_root/work/data" \
       --setenv="CLIARY_CACHE_DIR=$ci_root/work/cache/cliary" \

@@ -11,7 +11,7 @@ package = module_from_spec(spec)
 spec.loader.exec_module(package)
 
 
-def macho(cpu, minimum=(11 << 16), library='/usr/lib/libSystem.B.dylib'):
+def macho(cpu, minimum=(13 << 16), library='/usr/lib/libSystem.B.dylib'):
     name = library.encode() + b'\0'
     dylib = struct.pack('<6I', 0xC, 24 + len(name), 24, 0, 0, 0) + name
     version = struct.pack('<6I', 0x32, 24, 1, minimum, 11 << 16 | 3 << 8, 0)
@@ -22,7 +22,7 @@ class PlatformGateTests(unittest.TestCase):
     def test_both_mac_architectures(self):
         for target, cpu in [('x86_64-apple-darwin', 0x01000007), ('aarch64-apple-darwin', 0x0100000C)]:
             info = package.inspect_binary(macho(cpu), target)
-            self.assertEqual(info['minimum_macos'], '11.0.0')
+            self.assertEqual(info['minimum_macos'], '13.0.0')
             self.assertEqual(info['system_libraries'], ['/usr/lib/libSystem.B.dylib'])
 
     def test_wrong_mac_architecture(self):

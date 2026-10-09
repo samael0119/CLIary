@@ -75,12 +75,16 @@ If you skip scanning, installation status remains **Not scanned** until you run 
 
 在已登录 GitHub 且有仓库访问权限的浏览器中，直接下载对应架构的单文件程序：
 
-| Linux 架构 | 二进制下载 |
+| 平台 | 二进制下载 |
 | --- | --- |
-| x86_64（常见 Intel／AMD 电脑） | [cliary-linux-x86_64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-linux-x86_64) |
-| ARM64 | [cliary-linux-arm64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-linux-arm64) |
+| Linux x86_64（常见 Intel／AMD 电脑） | [cliary-linux-x86_64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-linux-x86_64) |
+| Linux ARM64 | [cliary-linux-arm64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-linux-arm64) |
+| macOS Intel | [cliary-macos-x86_64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-macos-x86_64) |
+| macOS Apple Silicon | [cliary-macos-arm64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-macos-arm64) |
 
-无需解压或运行安装脚本。浏览器下载通常不保留可执行权限，可在文件属性中允许执行，或在下载目录运行（ARM64 替换文件名）：
+macOS 包要求 13.0 或更新版本，已交叉编译并检查架构与系统库依赖，尚未经过 Mac 实机验收，也未进行 Apple Developer ID 签名或公证。
+
+无需解压或运行安装脚本。浏览器下载通常不保留可执行权限，可在文件属性中允许执行，或在下载目录运行（其他平台替换文件名）：
 
 ```sh
 chmod +x cliary-linux-x86_64
@@ -252,15 +256,7 @@ The CLI lists longer package details, repository links and examples beneath the 
 
 XDG base directories and `CLIARY_CONFIG_DIR`, `CLIARY_DATA_DIR`, and `CLIARY_CACHE_DIR` are supported. A Catalog update replaces only `catalog.db`. Public Release builds can have a built-in GitHub Catalog URL; source builds can use `cliary sync --url https://github.com/OWNER/REPO/releases/latest/download` or set `catalog_url` in `config.toml`.
 
-For private releases, first download the Catalog assets with GitHub CLI, then import them locally:
-
-```sh
-cliary_assets_dir="$(mktemp -d)"
-cliary_release_tag="$(gh release view --repo samael0119/CLIary --json tagName --jq .tagName)"
-gh release download "$cliary_release_tag" --repo samael0119/CLIary --pattern manifest.json --pattern catalog.db.zst --dir "$cliary_assets_dir"
-cliary sync --from "$cliary_assets_dir"
-rm -rf -- "$cliary_assets_dir"
-```
+The binary-only CLIary Release does not include separate Catalog assets. Use `cliary sync --bundled` to refresh its embedded Catalog. If you maintain your own Catalog distribution, download its `manifest.json` and `catalog.db.zst` into one directory and import them with `cliary sync --from <directory>`.
 
 `sync --from` checks schema, SHA-256, decompressed size, SQLite integrity and Catalog metadata before replacement. It only accepts newer Catalog versions and leaves `user.db` unchanged. `--from`, `--url` and `--bundled` are mutually exclusive. Neither anonymous `sync --url` nor an embedded URL can authenticate to a private release; do not place credentials in URLs or configuration. `sync --bundled` remains the simpler offline option when the desired Catalog ships with the new binary.
 
@@ -307,7 +303,7 @@ cargo test --workspace
 
 ### Self-hosted CI / 自托管构建
 
-GitHub Actions 使用标签为 `self-hosted, Linux, X64` 的 runner。PR 运行验证；main 更新和手动运行串行构建 Linux x86_64／ARM64，默认也交叉编译 macOS Intel／Apple Silicon。手动运行时可取消 `build_macos`。macOS SDK 固定为 11.3，部署目标为 macOS 11.0；交叉编译产物检查架构、最低系统版本和系统库依赖，尚需 Mac 实机验收。
+GitHub Actions 使用标签为 `self-hosted, Linux, X64` 的 runner。PR 运行验证；main 更新和手动运行串行构建 Linux x86_64／ARM64，默认也交叉编译 macOS Intel／Apple Silicon。手动运行时可取消 `build_macos`。macOS SDK 固定为 11.3，部署目标为 macOS 13.0；交叉编译产物检查架构、最低系统版本和系统库依赖，尚需 Mac 实机验收。
 
 构建进程由 systemd／cgroup v2 限制为 **500 MiB RAM、最多 1 GiB swap、一个 CPU**；Rust 工具链、SDK、临时文件和输出放入 **5 GiB 独立工作盘**。runner 服务、操作系统和基础软件包不计入这些构建额度。首次运行需至少 5 GiB 可用磁盘；RAM／swap 超限或工作盘写满会失败，不自动提高限制。目标之间清理中间产物，结束时停止构建进程并卸载、删除工作盘。构建日志／reports 记录实际限制、CPU 和可用的峰值指标。
 

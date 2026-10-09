@@ -28,10 +28,28 @@ PY
 }
 trap report_resources EXIT
 
+python3 - <<'PY'
+import os
+from pathlib import Path
+cgroup = next(line.split(':', 2)[2] for line in Path('/proc/self/cgroup').read_text().splitlines() if line.startswith('0:'))
+directory = Path('/sys/fs/cgroup') / cgroup.lstrip('/')
+for name, expected in [('memory.max', 500 * 1024**2), ('memory.swap.max', 1024**3)]:
+    actual = (directory / name).read_text().strip()
+    if actual != str(expected):
+        raise SystemExit(f'Resource limit not enforced: {name}={actual}, expected {expected}')
+quota, period = (directory / 'cpu.max').read_text().split()
+if quota != period:
+    raise SystemExit(f'CPU quota not enforced: {quota}/{period}')
+disk = os.statvfs('.')
+if disk.f_blocks * disk.f_frsize > 5 * 1024**3:
+    raise SystemExit('Build filesystem exceeds the 5 GiB limit')
+print('Verified kernel limits: 500 MiB RAM, 1 GiB swap, 1 CPU, at most 5 GiB build disk')
+PY
+
 python3 -m venv .ci-venv
 python -m pip install --disable-pip-version-check \
   PyYAML==6.0.2 jsonschema==4.23.0 tomli==2.2.1 \
-  cargo-zigbuild==0.23.4 ziglang==0.14.1
+  cargo-zigbuild==0.23.4 ziglang==0.16.0
 
 rustup_url=https://static.rust-lang.org/rustup/dist/x86_64-unknown-linux-gnu/rustup-init
 curl --fail --location --retry 3 "$rustup_url" -o "$TMPDIR/rustup-init"
@@ -72,7 +90,7 @@ for target in "${targets[@]}"; do
   rustup target add "$target"
   if [[ "$target" == *apple-darwin ]]; then
     export SDKROOT="$PWD/.ci-sdk/MacOSX11.3.sdk"
-    export MACOSX_DEPLOYMENT_TARGET=11.0
+    export MACOSX_DEPLOYMENT_TARGET=13.0
   else
     unset SDKROOT MACOSX_DEPLOYMENT_TARGET
   fi
