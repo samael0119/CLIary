@@ -5,6 +5,16 @@
 *.db-wal
 .DS_Store
 
+# Local development records and prototypes (see docs/README.md)
+/docs/dev/
+
+# Legacy locations: keep regenerated development records out of commits
+/docs/plans/
+/docs/reviews/
+/docs/improvement-runs/
+/docs/superpowers/
+/docs/daily-improvement-automation.md
+/ui_redesign_preview.html
 
 # Local browser QA captures
 .impeccable/review/
