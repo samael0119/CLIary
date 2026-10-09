@@ -67,7 +67,7 @@ target/release/cliary installed
 target/release/cliary web
 ```
 
-`cliary web` serves `http://127.0.0.1:8848` on the loopback interface only. A bundled Catalog makes the first run fully offline. The Release installer downloads a checksum-verified binary, then asks whether to scan installed tools and enable Shell history; **Yes** is the interactive default for each. For unattended installs, pass `--scan` or `--no-scan` and `--enable-history` or `--no-history`. If you run a locally built binary directly, its first interactive launch offers the same setup. Non-interactive first launches scan automatically but leave Shell history disabled.
+`cliary web` serves `http://127.0.0.1:8848` on the loopback interface only. A bundled Catalog makes the first run fully offline. The first interactive launch offers scanning, future Shell history capture and an explicit preview/import of existing history. Non-interactive first launches scan automatically but leave Shell history disabled.
 
 If you skip scanning, installation status remains **Not scanned** until you run `cliary scan`.
 
@@ -75,25 +75,27 @@ If you skip scanning, installation status remains **Not scanned** until you run 
 
 在已登录 GitHub 且有仓库访问权限的浏览器中，直接下载对应架构的单文件程序：
 
-| Linux 架构 | 二进制下载 |
+| 平台 | 二进制下载 |
 | --- | --- |
-| x86_64（常见 Intel／AMD 电脑） | [cliary-linux-x86_64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-linux-x86_64) |
-| ARM64 | [cliary-linux-arm64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-linux-arm64) |
+| Linux x86_64（常见 Intel／AMD 电脑） | [cliary-linux-x86_64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-linux-x86_64) |
+| Linux ARM64 | [cliary-linux-arm64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-linux-arm64) |
+| macOS Intel | [cliary-macos-x86_64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-macos-x86_64) |
+| macOS Apple Silicon | [cliary-macos-arm64](https://github.com/samael0119/CLIary/releases/download/v0.1.0/cliary-macos-arm64) |
 
-无需解压或运行安装脚本。浏览器下载通常不保留可执行权限，可在文件属性中允许执行，或在下载目录运行（ARM64 替换文件名）：
+macOS 包要求 13.0 或更新版本，已交叉编译并检查架构与系统库依赖，尚未经过 Mac 实机验收，也未进行 Apple Developer ID 签名或公证。
+
+无需解压或运行安装脚本。浏览器下载通常不保留可执行权限，可在文件属性中允许执行，或在下载目录运行（其他平台替换文件名）：
 
 ```sh
 chmod +x cliary-linux-x86_64
 ./cliary-linux-x86_64 web
 ```
 
-打开 `http://127.0.0.1:8848` 即可使用 Web 页面；首次交互运行仍会提供扫描和历史设置指引。命令行使用可将 `web` 换成 `search 磁盘空间` 等子命令。下载同一 Release 的 `SHA256SUMS` 后，可用 `sha256sum --ignore-missing --check SHA256SUMS` 校验。需要全局 `cliary` 命令时，可将文件命名为 `cliary` 并放入 PATH 目录，或使用下面的安装器。
+打开 `http://127.0.0.1:8848` 即可使用 Web 页面；首次交互运行提供扫描和历史设置指引。命令行使用可将 `web` 换成 `search 磁盘空间` 等子命令。Release 只提供各平台二进制，SHA-256 列在发布说明中。需要全局 `cliary` 命令时，将文件命名为 `cliary` 并放入 PATH 目录。升级前停止旧 Web 服务再替换二进制；个人数据库和配置保留。
 
-### Install from a private release or offline package
+### Static Linux build
 
-Linux release packages use statically linked musl binaries, with **no glibc runtime dependency**. The [v0.1.0 Release](https://github.com/samael0119/CLIary/releases/tag/v0.1.0) provides Linux x86_64 and ARM64 packages; macOS can be built from source pending native package validation.
-
-Linux 发布包使用 musl 静态链接，无需安装 glibc 或 musl 运行库。首发提供 Linux x86_64 和 ARM64 安装包；ARM64 经 QEMU 验证，尚未进行实机验收。macOS 暂以源码构建使用。
+Linux 发布二进制使用 musl 静态链接，无 glibc／musl 动态库依赖。SQLite、Catalog 与 Web 静态资源内置，目标电脑无需安装 Rust 或 SQLite。可选扫描和 Shell 集成使用的系统工具仍由操作系统提供。
 
 To reproduce the static Linux x86_64 build, install `musl-tools` on Debian/Ubuntu, then:
 
@@ -104,30 +106,7 @@ CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc \
 cargo build --release --locked --target x86_64-unknown-linux-musl -p cliary-cli
 ```
 
-The resulting executable is `target/x86_64-unknown-linux-musl/release/cliary`. Release packaging strips unused symbols; it does not require Rust, SQLite, glibc or a musl loader to be installed on the destination computer. Operating-system utilities used by optional scanning and Shell integration remain separate requirements.
-
-The current repository is private. Anonymous `curl` downloads do not work for its releases. After a release is published, use GitHub CLI with repository access:
-
-```sh
-gh auth login
-CLIARY_REPO=samael0119/CLIary sh scripts/install.sh --github
-# To pin an upgrade: add --tag v0.1.0
-```
-
-The installer uses `gh` to authenticate and download the archive and checksums from the same release. Credentials stay with GitHub CLI; CLIary does not save them or forward them to Catalog URLs. For a public repository, the ordinary HTTPS installer remains available.
-
-A downloaded or locally built package can be installed without a repository or network:
-
-```sh
-sh scripts/install.sh --from /path/to/release-assets
-# Unattended: add --no-scan --no-history
-```
-
-The directory must contain `cliary-<platform-target>.tar.gz` (with a `cliary` binary) and `SHA256SUMS`. A checksum failure leaves the installed binary untouched. Upgrades replace the binary atomically and preserve personal databases and configuration; restart a running Web server afterward to use the new binary. Existing Shell hooks stay in place; run `cliary setup shell --enable` to update them if upgrading from an older hook implementation.
-
-On Linux, the installer prefers `cliary-x86_64-unknown-linux-musl.tar.gz` (or the corresponding ARM64 target). It reads the fixed release's checksums first and also accepts an older `*-unknown-linux-gnu.tar.gz` package when a musl entry is absent, including offline installs. Both paths verify checksums. GNU packages retain their own glibc requirements.
-
-私有仓库使用已登录的 `gh` 下载；离线安装使用 `--from`。默认仍会询问扫描、未来历史采集与旧历史预览；不自动导入旧历史。
+The resulting executable is `target/x86_64-unknown-linux-musl/release/cliary`.
 
 ### Development environment scanning
 
@@ -277,15 +256,7 @@ The CLI lists longer package details, repository links and examples beneath the 
 
 XDG base directories and `CLIARY_CONFIG_DIR`, `CLIARY_DATA_DIR`, and `CLIARY_CACHE_DIR` are supported. A Catalog update replaces only `catalog.db`. Public Release builds can have a built-in GitHub Catalog URL; source builds can use `cliary sync --url https://github.com/OWNER/REPO/releases/latest/download` or set `catalog_url` in `config.toml`.
 
-For private releases, first download the Catalog assets with GitHub CLI, then import them locally:
-
-```sh
-cliary_assets_dir="$(mktemp -d)"
-cliary_release_tag="$(gh release view --repo samael0119/CLIary --json tagName --jq .tagName)"
-gh release download "$cliary_release_tag" --repo samael0119/CLIary --pattern manifest.json --pattern catalog.db.zst --dir "$cliary_assets_dir"
-cliary sync --from "$cliary_assets_dir"
-rm -rf -- "$cliary_assets_dir"
-```
+The binary-only CLIary Release does not include separate Catalog assets. Use `cliary sync --bundled` to refresh its embedded Catalog. If you maintain your own Catalog distribution, download its `manifest.json` and `catalog.db.zst` into one directory and import them with `cliary sync --from <directory>`.
 
 `sync --from` checks schema, SHA-256, decompressed size, SQLite integrity and Catalog metadata before replacement. It only accepts newer Catalog versions and leaves `user.db` unchanged. `--from`, `--url` and `--bundled` are mutually exclusive. Neither anonymous `sync --url` nor an embedded URL can authenticate to a private release; do not place credentials in URLs or configuration. `sync --bundled` remains the simpler offline option when the desired Catalog ships with the new binary.
 
@@ -330,7 +301,15 @@ cargo run -p cliary-catalog --bin cliary-catalog-build -- validate
 cargo test --workspace
 ```
 
-The repository contains a GitHub Actions workflow for Catalog validation and four-platform packaging. Automated publishing is currently deferred; merging to `main` alone is not evidence that a release exists. `cliary sync` checks the manifest and SHA-256 digest before replacing the local Catalog.
+### Self-hosted CI / 自托管构建
+
+GitHub Actions 使用标签为 `self-hosted, Linux, X64` 的 runner。PR 运行验证；main 更新和手动运行串行构建 Linux x86_64／ARM64，默认也交叉编译 macOS Intel／Apple Silicon。手动运行时可取消 `build_macos`。macOS SDK 固定为 11.3，部署目标为 macOS 13.0；交叉编译产物检查架构、最低系统版本和系统库依赖，尚需 Mac 实机验收。
+
+构建进程由 systemd／cgroup v2 限制为 **500 MiB RAM、最多 1 GiB swap、一个 CPU**；Rust 工具链、SDK、临时文件和输出放入 **5 GiB 独立工作盘**。runner 服务、操作系统和基础软件包不计入这些构建额度。首次运行需至少 5 GiB 可用磁盘；RAM／swap 超限或工作盘写满会失败，不自动提高限制。目标之间清理中间产物，结束时停止构建进程并卸载、删除工作盘。构建日志／reports 记录实际限制、CPU 和可用的峰值指标。
+
+runner 需启用 cgroup v2、systemd，运行用户须为 root 或可免密 sudo，以创建工作盘和受限服务。Debian／Ubuntu 缺少构建基础依赖时自动安装；不支持的环境会明确报错。工作流最长 3 小时，受限服务最长 150 分钟。网络下载与 swap 可能显著增加首次运行耗时。
+
+main 的成功构建发布为预发布版本，**不替换正式 latest**。Release 仅上传二进制，校验和写入说明；详细构建报告作为保留 3 天的 Actions artifact。此 Release 不提供远程 Catalog 更新资产，程序使用内置 Catalog；可用 `cliary sync --bundled` 刷新内置数据。自行配置的 Catalog 服务仍使用 manifest 和 SHA-256 校验。
 
 ## V0.1 boundaries
 
